@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotaFlex - Preview</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: #2F5597;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px;
+        }
+        .status {
+            background: #10B981;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .feature {
+            background: #F8F9FA;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2F5597;
+        }
+        .feature h3 {
+            margin: 0 0 10px 0;
+            color: #2F5597;
+        }
+        .feature p {
+            margin: 0;
+            color: #6B7280;
+        }
+        .cta {
+            text-align: center;
+            margin: 40px 0;
+        }
+        .btn {
+            display: inline-block;
+            background: #2F5597;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #1E3A8A;
+            transform: translateY(-2px);
+        }
+        .info {
+            background: #EFF6FF;
+            border: 1px solid #BFDBFE;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .info h4 {
+            margin: 0 0 10px 0;
+            color: #1E40AF;
+        }
+        .info p {
+            margin: 0;
+            color: #374151;
+        }
+        .footer {
+            background: #F3F4F6;
+            padding: 20px;
+            text-align: center;
+            color: #6B7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 NotaFlex</h1>
+            <p>Processamento Inteligente de Relatórios Financeiros</p>
+        </div>
+        
+        <div class="content">
+            <div class="status">
+                ✅ Servidor funcionando em http://localhost:3000
+            </div>
+            
+            <div class="info">
+                <h4>🚀 Como acessar o aplicativo:</h4>
+                <p>1. Abra seu navegador e acesse: <strong>http://localhost:3000</strong></p>
+                <p>2. Ou clique no botão abaixo para abrir automaticamente</p>
+            </div>
+            
+            <div class="cta">
+                <a href="http://localhost:3000" class="btn" target="_blank">
+                    🌐 Abrir NotaFlex no Navegador
+                </a>
+            </div>
+            
+            <div class="features">
+                <div class="feature">
+                    <h3>📁 Upload de Arquivos</h3>
+                    <p>Faça upload de arquivos CSV para processamento automático de relatórios financeiros</p>
+                </div>
+                
+                <div class="feature">
+                    <h3>📈 Análise Inteligente</h3>
+                    <p>Processamento automático com análise por filial, período e tipo de documento</p>
+                </div>
+                
+                <div class="feature">
+                    <h3>📊 Relatórios Excel</h3>
+                    <p>Geração automática de relatórios detalhados em formato Excel</p>
+                </div>
+                
+                <div class="feature">
+                    <h3>🔄 Resumo Consolidado</h3>
+                    <p>Criação de resumos consolidados de múltiplas filiais</p>
+                </div>
+            </div>
+            
+            <div class="info">
+                <h4>💡 Funcionalidades Principais:</h4>
+                <p>• Processamento de arquivos CSV com encoding automático</p>
+                <p>• Análise de contas a pagar e a receber</p>
+                <p>• Geração de relatórios Excel formatados</p>
+                <p>• Interface moderna e responsiva</p>
+                <p>• Suporte a múltiplos arquivos simultâneos</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 NotaFlex - Desenvolvido para processamento eficiente de relatórios</p>
+            <p>Versão 1.5.0 | Servidor rodando em localhost:3000</p>
+        </div>
+    </div>
+</body>
+</html>

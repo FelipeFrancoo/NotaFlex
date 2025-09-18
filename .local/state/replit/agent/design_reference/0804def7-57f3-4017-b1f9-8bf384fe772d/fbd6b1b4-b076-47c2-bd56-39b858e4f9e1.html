@@ -1,0 +1,505 @@
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Processamento de Notas Fiscais</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                borderRadius: {
+                    lg: "var(--radius)",
+                    md: "calc(var(--radius) - 2px)",
+                    sm: "calc(var(--radius) - 4px)",
+                },
+                colors: {
+                    background: "var(--background)",
+                    foreground: "var(--foreground)",
+                    card: {
+                        DEFAULT: "var(--card)",
+                        foreground: "var(--card-foreground)",
+                    },
+                    popover: {
+                        DEFAULT: "var(--popover)",
+                        foreground: "var(--popover-foreground)",
+                    },
+                    primary: {
+                        DEFAULT: "var(--primary)",
+                        foreground: "var(--primary-foreground)",
+                    },
+                    secondary: {
+                        DEFAULT: "var(--secondary)",
+                        foreground: "var(--secondary-foreground)",
+                    },
+                    muted: {
+                        DEFAULT: "var(--muted)",
+                        foreground: "var(--muted-foreground)",
+                    },
+                    accent: {
+                        DEFAULT: "var(--accent)",
+                        foreground: "var(--accent-foreground)",
+                    },
+                    destructive: {
+                        DEFAULT: "var(--destructive)",
+                        foreground: "var(--destructive-foreground)",
+                    },
+                    border: "var(--border)",
+                    input: "var(--input)",
+                    ring: "var(--ring)",
+                },
+                fontFamily: {
+                    sans: ["Inter", "ui-sans-serif", "system-ui"],
+                    mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+                }
+            },
+        }
+    };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --radius: 8px;
+            --background: hsl(210 40% 98%);
+            --foreground: hsl(222.2 84% 4.9%);
+            --card: hsl(0 0% 100%);
+            --card-foreground: hsl(222.2 84% 4.9%);
+            --popover: hsl(0 0% 100%);
+            --popover-foreground: hsl(222.2 84% 4.9%);
+            --primary: hsl(221.2 83.2% 53.3%);
+            --primary-foreground: hsl(210 40% 98%);
+            --secondary: hsl(210 40% 96%);
+            --secondary-foreground: hsl(222.2 84% 4.9%);
+            --muted: hsl(210 40% 96%);
+            --muted-foreground: hsl(215.4 16.3% 46.9%);
+            --accent: hsl(210 40% 96%);
+            --accent-foreground: hsl(222.2 84% 4.9%);
+            --destructive: hsl(0 84.2% 60.2%);
+            --destructive-foreground: hsl(210 40% 98%);
+            --border: hsl(214.3 31.8% 91.4%);
+            --input: hsl(214.3 31.8% 91.4%);
+            --ring: hsl(221.2 83.2% 53.3%);
+        }
+
+        .upload-area {
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: hsl(var(--primary));
+            background-color: hsl(var(--primary) / 0.02);
+        }
+        
+        .upload-area.dragover {
+            border-color: hsl(var(--primary));
+            background-color: hsl(var(--primary) / 0.05);
+            transform: scale(1.01);
+        }
+
+        .processing-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .data-row:hover {
+            background-color: hsl(var(--muted) / 0.5);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-background font-sans antialiased">
+    <!-- @COMPONENT: Header -->
+    <header class="bg-card border-b border-border shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <div class="flex items-center justify-center w-10 h-10 bg-primary rounded-lg">
+                        <i class="fas fa-file-invoice text-primary-foreground text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-semibold text-foreground">Sistema de Notas Fiscais</h1>
+                        <p class="text-sm text-muted-foreground">Processamento de relatórios semanais</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-muted-foreground">Versão 1.0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- @END_COMPONENT: Header -->
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- @COMPONENT: FileUpload -->
+        <div class="bg-card rounded-lg border border-border shadow-sm p-6 mb-8">
+            <div class="mb-6">
+                <h2 class="text-2xl font-semibold text-foreground mb-2">Upload do Relatório CSV</h2>
+                <p class="text-muted-foreground">Faça upload do arquivo CSV contendo o relatório semanal das notas fiscais</p>
+            </div>
+
+            <div class="upload-area border-2 border-dashed border-border rounded-lg p-8 text-center mb-6" 
+                 data-implementation="Implement drag and drop functionality">
+                <div class="flex flex-col items-center">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-muted-foreground mb-4"></i>
+                    <h3 class="text-lg font-medium text-foreground mb-2">Arraste e solte seu arquivo aqui</h3>
+                    <p class="text-muted-foreground mb-4">ou clique para selecionar</p>
+                    <button class="bg-primary text-primary-foreground px-6 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors"
+                            data-event="click:handleFileSelect">
+                        Selecionar Arquivo CSV
+                    </button>
+                </div>
+                <input type="file" accept=".csv" class="hidden" data-mock="true">
+            </div>
+
+            <div class="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Formatos aceitos: CSV</span>
+                <span>Tamanho máximo: 10MB</span>
+            </div>
+
+            <!-- File Info Display (Hidden by default) -->
+            <div class="hidden fade-in mt-6 p-4 bg-muted rounded-lg" data-state="fileSelected">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-file-csv text-green-600 text-xl"></i>
+                        <div>
+                            <p class="font-medium text-foreground" data-bind="fileName">T014_VisaoGeralFluxoCaixaDetalhado.csv</p>
+                            <p class="text-sm text-muted-foreground" data-bind="fileSize">2.5 KB</p>
+                        </div>
+                    </div>
+                    <button class="text-destructive hover:text-destructive/80" data-event="click:removeFile">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: FileUpload -->
+
+        <!-- @COMPONENT: ProcessingStatus -->
+        <div class="hidden bg-card rounded-lg border border-border shadow-sm p-6 mb-8" data-state="processing">
+            <div class="flex items-center space-x-4">
+                <div class="processing-animation">
+                    <i class="fas fa-cog fa-spin text-primary text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-foreground">Processando arquivo...</h3>
+                    <p class="text-muted-foreground">Analisando dados e gerando totais</p>
+                </div>
+            </div>
+            <div class="mt-4">
+                <div class="w-full bg-muted rounded-full h-2">
+                    <div class="bg-primary h-2 rounded-full transition-all duration-300" style="width: 65%"></div>
+                </div>
+                <p class="text-sm text-muted-foreground mt-2">Processando... 65%</p>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: ProcessingStatus -->
+
+        <!-- @COMPONENT: DataPreview -->
+        <div class="space-y-8" data-state="dataProcessed" data-mock="true">
+            <!-- Branch Totals Section -->
+            <div class="bg-card rounded-lg border border-border shadow-sm p-6 fade-in">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-xl font-semibold text-foreground">Totais por Filial</h3>
+                        <p class="text-muted-foreground">Valores consolidados por unidade</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-muted-foreground">Total de filiais</p>
+                        <p class="text-2xl font-semibold text-foreground" data-bind="totalBranches">3</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-border">
+                                <th class="text-left py-3 px-4 font-medium text-muted-foreground">Filial</th>
+                                <th class="text-right py-3 px-4 font-medium text-muted-foreground">Quantidade de NFs</th>
+                                <th class="text-right py-3 px-4 font-medium text-muted-foreground">Valor Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- @MAP: branchTotals.map(branch => ( -->
+                            <tr class="data-row transition-colors">
+                                <td class="py-3 px-4 font-medium text-foreground" data-bind="branch.name">Matriz São Paulo</td>
+                                <td class="text-right py-3 px-4 text-foreground" data-bind="branch.invoiceCount">127</td>
+                                <td class="text-right py-3 px-4 font-mono font-medium text-foreground" data-bind="branch.total">R$ 45.678,90</td>
+                            </tr>
+                            <tr class="data-row transition-colors">
+                                <td class="py-3 px-4 font-medium text-foreground" data-bind="branch.name">Filial Rio de Janeiro</td>
+                                <td class="text-right py-3 px-4 text-foreground" data-bind="branch.invoiceCount">89</td>
+                                <td class="text-right py-3 px-4 font-mono font-medium text-foreground" data-bind="branch.total">R$ 32.145,67</td>
+                            </tr>
+                            <tr class="data-row transition-colors">
+                                <td class="py-3 px-4 font-medium text-foreground" data-bind="branch.name">Filial Belo Horizonte</td>
+                                <td class="text-right py-3 px-4 text-foreground" data-bind="branch.invoiceCount">63</td>
+                                <td class="text-right py-3 px-4 font-mono font-medium text-foreground" data-bind="branch.total">R$ 18.932,45</td>
+                            </tr>
+                            <!-- @END_MAP )) -->
+                            <tr class="border-t border-border bg-muted/20">
+                                <td class="py-3 px-4 font-semibold text-foreground">Total Geral</td>
+                                <td class="text-right py-3 px-4 font-semibold text-foreground" data-bind="totalInvoices">279</td>
+                                <td class="text-right py-3 px-4 font-mono font-semibold text-lg text-primary" data-bind="grandTotal">R$ 96.757,02</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Weekly Totals Section -->
+            <div class="bg-card rounded-lg border border-border shadow-sm p-6 fade-in">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-xl font-semibold text-foreground">Totais por Semana</h3>
+                        <p class="text-muted-foreground">Breakdown diário e acumulado semanal</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-muted-foreground">Período</p>
+                        <p class="text-lg font-medium text-foreground" data-bind="weekPeriod">07/10 - 13/10/2024</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Daily Breakdown -->
+                    <div>
+                        <h4 class="font-medium text-foreground mb-4">Valores por Dia</h4>
+                        <div class="space-y-3">
+                            <!-- @MAP: dailyTotals.map(day => ( -->
+                            <div class="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-primary rounded-full"></div>
+                                    <span class="font-medium text-foreground" data-bind="day.name">Segunda-feira</span>
+                                    <span class="text-sm text-muted-foreground" data-bind="day.date">07/10</span>
+                                </div>
+                                <span class="font-mono font-medium text-foreground" data-bind="day.total">R$ 12.456,78</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-primary rounded-full"></div>
+                                    <span class="font-medium text-foreground" data-bind="day.name">Terça-feira</span>
+                                    <span class="text-sm text-muted-foreground" data-bind="day.date">08/10</span>
+                                </div>
+                                <span class="font-mono font-medium text-foreground" data-bind="day.total">R$ 15.789,23</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-primary rounded-full"></div>
+                                    <span class="font-medium text-foreground" data-bind="day.name">Quarta-feira</span>
+                                    <span class="text-sm text-muted-foreground" data-bind="day.date">09/10</span>
+                                </div>
+                                <span class="font-mono font-medium text-foreground" data-bind="day.total">R$ 18.234,56</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-primary rounded-full"></div>
+                                    <span class="font-medium text-foreground" data-bind="day.name">Quinta-feira</span>
+                                    <span class="text-sm text-muted-foreground" data-bind="day.date">10/10</span>
+                                </div>
+                                <span class="font-mono font-medium text-foreground" data-bind="day.total">R$ 21.678,90</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-primary rounded-full"></div>
+                                    <span class="font-medium text-foreground" data-bind="day.name">Sexta-feira</span>
+                                    <span class="text-sm text-muted-foreground" data-bind="day.date">11/10</span>
+                                </div>
+                                <span class="font-mono font-medium text-foreground" data-bind="day.total">R$ 19.456,12</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-secondary rounded-full"></div>
+                                    <span class="font-medium text-muted-foreground" data-bind="day.name">Sábado</span>
+                                    <span class="text-sm text-muted-foreground" data-bind="day.date">12/10</span>
+                                </div>
+                                <span class="font-mono text-muted-foreground" data-bind="day.total">R$ 5.678,34</span>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 bg-secondary rounded-full"></div>
+                                    <span class="font-medium text-muted-foreground" data-bind="day.name">Domingo</span>
+                                    <span class="text-sm text-muted-foreground" data-bind="day.date">13/10</span>
+                                </div>
+                                <span class="font-mono text-muted-foreground" data-bind="day.total">R$ 3.484,09</span>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+
+                    <!-- Weekly Summary -->
+                    <div>
+                        <h4 class="font-medium text-foreground mb-4">Resumo da Semana</h4>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-primary font-medium">Total de Dias Úteis</span>
+                                    <span class="text-primary font-semibold" data-bind="workingDays">5</span>
+                                </div>
+                                <div class="text-2xl font-bold text-primary" data-bind="workingDaysTotal">R$ 87.615,59</div>
+                                <p class="text-sm text-primary/70 mt-1">Média diária: R$ 17.523,12</p>
+                            </div>
+
+                            <div class="p-4 bg-secondary border border-border rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-muted-foreground font-medium">Total de Final de Semana</span>
+                                    <span class="text-muted-foreground font-semibold" data-bind="weekendDays">2</span>
+                                </div>
+                                <div class="text-xl font-bold text-muted-foreground" data-bind="weekendTotal">R$ 9.162,43</div>
+                                <p class="text-sm text-muted-foreground mt-1">Média diária: R$ 4.581,22</p>
+                            </div>
+
+                            <div class="p-4 bg-accent border border-primary rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-foreground font-semibold">Total Acumulado da Semana</span>
+                                    <i class="fas fa-chart-line text-primary"></i>
+                                </div>
+                                <div class="text-3xl font-bold text-primary" data-bind="weekTotal">R$ 96.778,02</div>
+                                <p class="text-sm text-muted-foreground mt-1">100% do objetivo semanal atingido</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions Section -->
+            <div class="bg-card rounded-lg border border-border shadow-sm p-6 fade-in">
+                <div class="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0">
+                    <div>
+                        <h3 class="text-lg font-semibold text-foreground">Exportar Relatório</h3>
+                        <p class="text-muted-foreground">Gerar arquivo Excel com formatação personalizada</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button class="px-4 py-2 border border-border text-foreground rounded-md hover:bg-muted transition-colors"
+                                data-event="click:resetProcess">
+                            <i class="fas fa-redo mr-2"></i>
+                            Processar Novamente
+                        </button>
+                        <button class="bg-primary text-primary-foreground px-6 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors"
+                                data-event="click:generateExcel" data-implementation="Generate and download Excel file">
+                            <i class="fas fa-download mr-2"></i>
+                            Gerar e Baixar Excel
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-4 bg-muted/30 rounded-lg">
+                    <div class="flex items-start space-x-3">
+                        <i class="fas fa-info-circle text-primary text-sm mt-0.5"></i>
+                        <div class="text-sm text-muted-foreground">
+                            <p class="font-medium text-foreground mb-1">Sobre o arquivo Excel gerado:</p>
+                            <ul class="space-y-1">
+                                <li>• Layout seguindo o modelo BEIJA FLOR.xlsx</li>
+                                <li>• Planilhas separadas por filial e resumo consolidado</li>
+                                <li>• Formatação personalizada com cores e bordas</li>
+                                <li>• Fórmulas automáticas para totais e médias</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: DataPreview -->
+
+        <!-- @COMPONENT: EmptyState (Shown initially) -->
+        <div class="text-center py-12" data-state="empty">
+            <div class="mx-auto max-w-md">
+                <i class="fas fa-file-upload text-6xl text-muted-foreground mb-4"></i>
+                <h3 class="text-xl font-semibold text-foreground mb-2">Nenhum arquivo carregado</h3>
+                <p class="text-muted-foreground mb-6">Faça upload do arquivo CSV para começar o processamento dos dados</p>
+                <div class="space-y-2 text-sm text-muted-foreground">
+                    <p>📊 Processamento automático de relatórios</p>
+                    <p>📈 Análise por filial e período</p>
+                    <p>📄 Exportação em formato Excel</p>
+                </div>
+            </div>
+        </div>
+        <!-- @END_COMPONENT: EmptyState -->
+    </main>
+
+    <footer class="border-t border-border bg-card mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col sm:flex-row items-center justify-between">
+                <p class="text-sm text-muted-foreground">© 2024 Sistema de Notas Fiscais. Desenvolvido para processamento eficiente de relatórios.</p>
+                <p class="text-sm text-muted-foreground mt-2 sm:mt-0">Versão 1.0.0</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // TODO: Implement all business logic, file upload, CSV processing, Excel generation, and API calls
+        (function() {
+            // Mock state management for demonstration
+            let currentState = 'empty'; // empty, fileSelected, processing, dataProcessed
+            
+            // Show appropriate sections based on state
+            function updateUIState(state) {
+                currentState = state;
+                document.querySelectorAll('[data-state]').forEach(element => {
+                    const elementState = element.getAttribute('data-state');
+                    if (elementState === state) {
+                        element.classList.remove('hidden');
+                    } else {
+                        element.classList.add('hidden');
+                    }
+                });
+            }
+
+            // Mock file selection demonstration
+            function simulateFileUpload() {
+                updateUIState('fileSelected');
+                setTimeout(() => {
+                    updateUIState('processing');
+                    setTimeout(() => {
+                        updateUIState('dataProcessed');
+                    }, 3000);
+                }, 1000);
+            }
+
+            // Initialize with empty state
+            updateUIState('empty');
+
+            // Add event listeners for demonstration
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('[data-event]')) {
+                    const event = e.target.closest('[data-event]').getAttribute('data-event');
+                    
+                    if (event === 'click:handleFileSelect') {
+                        simulateFileUpload();
+                    } else if (event === 'click:resetProcess') {
+                        updateUIState('empty');
+                    } else if (event === 'click:generateExcel') {
+                        // TODO: Implement Excel generation and download
+                        alert('Gerando arquivo Excel... (funcionalidade a ser implementada)');
+                    }
+                }
+            });
+
+            // Drag and drop visual feedback
+            const uploadArea = document.querySelector('.upload-area');
+            if (uploadArea) {
+                uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.add('dragover');
+                });
+
+                uploadArea.addEventListener('dragleave', () => {
+                    uploadArea.classList.remove('dragover');
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadArea.classList.remove('dragover');
+                    simulateFileUpload();
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
