@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import formidable from 'formidable'
 import fs from 'fs'
 import Papa from 'papaparse'
+import path from 'path'
 
 // Interfaces para tipos de dados processados
 interface ProcessedData {
@@ -31,6 +32,7 @@ interface ProcessedData {
   };
   grandTotal: string;
   totalInvoices: number;
+  transactions: TransactionForExcel[]; // Adicionado para exportação Excel
 }
 
 interface TransactionData {
@@ -41,26 +43,60 @@ interface TransactionData {
   category: string;
   branch: string;
   documentType: 'A_PAGAR' | 'A_RECEBER';
+  sourceFile: string; // Nome original do arquivo para separar categorias no Excel
 }
 
-// Função para parsing de datas CSV
+interface TransactionForExcel {
+  vencimento: string;
+  transacionador: string;
+  documento: string;
+  valor: string;
+  valorNumerico: number;
+}
+
+interface DocumentoProcessado {
+  dataVencimento: Date;
+  transacionador: string;
+  numeroDocumento: string;
+  valor: number;
+  valorOriginal: string;
+  categoria: 'A_PAGAR' | 'A_RECEBER';
+  filial: string;
+}
+
+// Função para parsing de datas CSV (EXATA)
 function parseCSVDate(dateStr: string): Date {
   const formats = [
-    /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // DD/MM/YYYY
-    /(\d{4})-(\d{1,2})-(\d{1,2})/, // YYYY-MM-DD
+    /(\d{1,2})\/(\d{1,2})\/(\d{4})/, // DD/MM/YYYY (formato brasileiro)
+    /(\d{4})-(\d{1,2})-(\d{1,2})/,  // YYYY-MM-DD (formato ISO)
   ];
   
   for (const format of formats) {
     const match = dateStr.match(format);
     if (match) {
       if (format === formats[0]) {
+        // DD/MM/YYYY - formato brasileiro
         return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
       } else {
+        // YYYY-MM-DD - formato ISO
         return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
       }
     }
   }
-  return new Date(dateStr);
+  
+  return new Date(dateStr); // Fallback
+}
+
+// Função auxiliar para semana (EXATA)
+function getWeekBoundaries(date: Date): { weekStart: Date; weekEnd: Date } {
+  const dayOfWeek = date.getDay();
+  const weekStart = new Date(date);
+  weekStart.setDate(date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)); // Monday
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6); // Sunday
+  weekEnd.setHours(23, 59, 59, 999);
+  return { weekStart, weekEnd };
 }
 
 // Função para parsing de valores monetários
@@ -74,32 +110,6 @@ function parseMonetaryValue(str: string): number {
   
   const value = parseFloat(cleanValue);
   return isNegative ? -value : value;
-}
-
-// Função para validar valores monetários
-function isMonetaryValue(str: any): boolean {
-  if (!str || typeof str !== 'string') return false;
-  
-  const patterns = [
-    /^R\$\s*[\d]{1,3}(?:\.[\d]{3})*,[\d]{2}$/, // R$ 1.234.567,89
-    /^[\d]{1,3}(?:\.[\d]{3})*,[\d]{2}$/, // 1.234.567,89
-    /^[\d]+,[\d]{2}$/, // 12345,89
-    /^R\$\s*[\d.,]+$/, // R$ com vários formatos
-  ];
-  
-  return patterns.some(pattern => pattern.test(str.trim()));
-}
-
-// Função para calcular limites de semana
-function getWeekBoundaries(date: Date): { weekStart: Date; weekEnd: Date } {
-  const dayOfWeek = date.getDay();
-  const weekStart = new Date(date);
-  weekStart.setDate(date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)); // Segunda
-  weekStart.setHours(0, 0, 0, 0);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6); // Domingo
-  weekEnd.setHours(23, 59, 59, 999);
-  return { weekStart, weekEnd };
 }
 
 // Função para detectar encoding
@@ -118,6 +128,104 @@ function detectEncoding(buffer: Buffer): string {
     }
   }
   return 'utf-8'; // fallback
+}
+
+// Interface para documento extraído conforme especificação
+interface DocumentoExtraido {
+  dataVencimento: Date;           // Data parseada da coluna 1
+  transacionador: string;         // TRANSACIONADOR da coluna 2 (DADO PRINCIPAL)
+  numeroDocumento: string;        // NÚMERO DO DOCUMENTO da coluna 3 (DADO PRINCIPAL)
+  valor: number;                  // Valor numérico da coluna 5
+  valorOriginal: string;          // Valor original como string
+  categoria: 'A_PAGAR' | 'A_RECEBER';
+  filial: string;                 // Nome da filial
+  weekStart: Date;                // Início da semana
+  weekEnd: Date;                  // Fim da semana
+  sourceFile: string;             // Nome do arquivo fonte
+}
+
+// Função para extrair transacionador e documento seguindo especificação EXATA
+function extrairTransacionadorEDocumento(csvContent: string, documentType: 'A_PAGAR' | 'A_RECEBER', nomeFilial: string): DocumentoExtraido[] {
+  // Parse CSV sem headers
+  const parseResult = Papa.parse(csvContent, {
+    header: false,
+    skipEmptyLines: true,
+  });
+  
+  const rows = parseResult.data as any[];
+  const documentosExtraidos: DocumentoExtraido[] = [];
+  
+  // Processar cada linha do CSV
+  for (const row of rows) {
+    // VALIDAÇÃO ESTRUTURAL OBRIGATÓRIA
+    if (!Array.isArray(row) || row.length < 5) continue;
+    
+    const category = row[0]?.toString().trim() || '';
+    let dateStr = '';
+    let transacionador = '';
+    let numeroDocumento = '';
+    let valueStr = '';
+    
+    // LÓGICA DE IDENTIFICAÇÃO POR TIPO DE DOCUMENTO
+    if (documentType === 'A_PAGAR') {
+      // Match EXATO - não usar includes()
+      if (category !== 'Contas a pagar- À vencer') continue;
+      
+      // MAPEAMENTO FIXO DAS COLUNAS:
+      dateStr = row[1]?.toString().trim() || '';           // COLUNA 1: Data Vencimento
+      transacionador = row[2]?.toString().trim() || '';    // COLUNA 2: TRANSACIONADOR
+      numeroDocumento = row[3]?.toString().trim() || '';   // COLUNA 3: NÚMERO DO DOCUMENTO
+      valueStr = row[5]?.toString().trim() || '0';         // COLUNA 5: Valor (SEMPRE coluna 5)
+      
+    } else if (documentType === 'A_RECEBER') {
+      // Match EXATO - não usar includes()
+      if (category !== 'Contas a receber - A vencer') continue;
+      
+      // MAPEAMENTO FIXO DAS COLUNAS:
+      dateStr = row[1]?.toString().trim() || '';           // COLUNA 1: Data Vencimento
+      transacionador = row[2]?.toString().trim() || '';    // COLUNA 2: TRANSACIONADOR
+      numeroDocumento = row[3]?.toString().trim() || '';   // COLUNA 3: NÚMERO DO DOCUMENTO
+      valueStr = row[5]?.toString().trim() || '0';         // COLUNA 5: Valor (SEMPRE coluna 5)
+    }
+    
+    // VALIDAÇÕES OBRIGATÓRIAS DOS DADOS EXTRAÍDOS
+    if (!dateStr || !transacionador || !valueStr) continue;
+    
+    // PARSING DA DATA DE VENCIMENTO
+    const date = parseCSVDate(dateStr);
+    if (!date || isNaN(date.getTime())) continue;
+    
+    // PARSING DO VALOR MONETÁRIO (formato brasileiro)
+    let cleanValue = valueStr.replace(/[R$\s]/g, '').replace(/\./g, '').replace(',', '.');
+    const isNegative = cleanValue.startsWith('-');
+    if (isNegative) {
+      cleanValue = cleanValue.substring(1);
+    }
+    const value = parseFloat(cleanValue);
+    if (isNaN(value) || value <= 0) continue;
+    
+    // APLICAÇÃO DE FALLBACKS PARA CAMPOS OBRIGATÓRIOS
+    const transacionadorFinal = transacionador || 'FORNECEDOR NÃO IDENTIFICADO';
+    const numeroDocumentoFinal = numeroDocumento || ''; // Removido fallback 'PENDENTE'
+    
+    // ESTRUTURA FINAL DOS DADOS EXTRAÍDOS
+    const { weekStart, weekEnd } = getWeekBoundaries(date);
+    documentosExtraidos.push({
+      dataVencimento: date,
+      transacionador: transacionadorFinal,      // DADO PRINCIPAL EXTRAÍDO
+      numeroDocumento: numeroDocumentoFinal,    // DADO PRINCIPAL EXTRAÍDO
+      valor: value,
+      valorOriginal: valueStr,
+      categoria: documentType,
+      filial: nomeFilial,
+      // Dados de compatibilidade
+      weekStart: weekStart,
+      weekEnd: weekEnd,
+      sourceFile: `${nomeFilial}.csv`
+    });
+  }
+  
+  return documentosExtraidos;
 }
 
 // Configuração para desabilitar o parser padrão do Next.js
@@ -139,6 +247,7 @@ export default async function handler(
     console.log('=== DEBUG UPLOAD CSV ===');
     console.log('Method:', req.method);
     console.log('Content-Type:', req.headers['content-type']);
+    console.log('Headers:', JSON.stringify(req.headers, null, 2));
     
     // Garantir que a pasta temp existe
     const tempDir = './temp';
@@ -157,30 +266,84 @@ export default async function handler(
 
     const [fields, files] = await form.parse(req);
     
-    console.log('Parsed fields:', fields);
-    console.log('Parsed files keys:', Object.keys(files));
-    console.log('Files structure:', files);
+    console.log('=== PARSED DATA ===');
+    console.log('Fields:', JSON.stringify(fields, null, 2));
+    console.log('Files keys:', Object.keys(files));
+    console.log('Files structure:', JSON.stringify(files, null, 2));
     
     // Obter tipos de documento selecionados
-    const selectedTypes = (fields.documentTypes as string[]) || ['A_PAGAR', 'A_RECEBER'];
+    let selectedTypes: ('A_PAGAR' | 'A_RECEBER')[] = ['A_PAGAR', 'A_RECEBER']; // Default
     
-    // Suportar tanto 'csvFiles' quanto 'files' (compatibilidade com frontend)
-    const uploadedFiles = files.csvFiles || files.files;
-    const allFiles = Array.isArray(uploadedFiles) ? uploadedFiles : [uploadedFiles].filter(Boolean);
+    if (fields.documentTypes && fields.documentTypes.length > 0) {
+      const documentTypesString = fields.documentTypes[0] as string;
+      console.log('documentTypesString recebido:', documentTypesString);
+      
+      try {
+        // Tentar fazer parse se for JSON
+        const parsed = JSON.parse(documentTypesString);
+        console.log('JSON parsed:', parsed);
+        
+        if (Array.isArray(parsed)) {
+          selectedTypes = parsed;
+        } else if (typeof parsed === 'object') {
+          // Se for um objeto com indices, extrair os valores e flatten
+          const allTypes: string[] = [];
+          Object.values(parsed).forEach(typeArray => {
+            if (Array.isArray(typeArray)) {
+              allTypes.push(...typeArray);
+            }
+          });
+          // Remover duplicatas
+          const uniqueTypes = Array.from(new Set(allTypes));
+          selectedTypes = uniqueTypes as ('A_PAGAR' | 'A_RECEBER')[];
+        }
+      } catch (e) {
+        console.log('Erro no parse JSON:', e);
+        // Se não for JSON, usar como array direto
+        selectedTypes = Array.isArray(fields.documentTypes) 
+          ? fields.documentTypes as ('A_PAGAR' | 'A_RECEBER')[]
+          : [documentTypesString as 'A_PAGAR' | 'A_RECEBER'];
+      }
+    }
     
-    // Filtrar apenas arquivos CSV
-    const csvFiles = allFiles.filter(file => 
-      file && file.originalFilename && 
-      (file.originalFilename.endsWith('.csv') || file.mimetype === 'text/csv')
-    );
+    console.log('Selected types processados:', selectedTypes);
     
+    // NORMALIZAÇÃO ROBUSTA DE ARQUIVOS (multi-field, multi-file)
+    const allFiles = Object.values(files).flat().filter(Boolean) as formidable.File[];
+    
+    console.log('=== FILE PROCESSING ===');
+    console.log('allFiles (normalizado):', allFiles.map(f => ({ originalFilename: f.originalFilename, path: f.filepath })));
+    console.log('allFiles length:', allFiles.length);
+    
+    // Filtrar apenas arquivos CSV - sendo mais permissivo para debug
+    const csvFiles = allFiles.filter(file => {
+      console.log('Checking file:', file ? {
+        originalFilename: file.originalFilename,
+        mimetype: file.mimetype,
+        size: file.size,
+        filepath: file.filepath
+      } : 'null file');
+      
+      if (!file || !file.originalFilename) return false;
+      // Aceitar .csv ou .txt (alguns sistemas exportam assim), case insensitive
+      return /\.(csv|txt)$/i.test(file.originalFilename);
+    });
+    
+    console.log('=== FILTERING RESULTS ===');
     console.log('CSV Files found:', csvFiles.length);
     console.log('Selected types:', selectedTypes);
+    console.log('CSV Files details:', csvFiles.map(f => f ? {
+      name: f.originalFilename,
+      type: f.mimetype,
+      size: f.size
+    } : null));
     
     if (csvFiles.length === 0) {
+      console.log('=== ERROR: NO FILES ===');
+      console.log('No CSV files found after filtering');
       return res.status(400).json({
         success: false,
-        message: 'Nenhum arquivo CSV foi enviado'
+        message: `Nenhum arquivo foi encontrado. Arquivos recebidos: ${allFiles.length}. Verifique se o arquivo é um CSV válido.`
       });
     }
 
@@ -189,95 +352,68 @@ export default async function handler(
     
     // Processar cada arquivo CSV
     for (const file of csvFiles) {
-      if (!file || !file.filepath) continue;
+      console.log(`=== PROCESSING FILE: ${file?.originalFilename} ===`);
+      
+      if (!file || !file.filepath) {
+        console.log('Skipping invalid file:', file);
+        continue;
+      }
+      try {
+      
+      console.log('File path:', file.filepath);
+      console.log('File exists:', fs.existsSync(file.filepath));
       
       const buffer = fs.readFileSync(file.filepath);
       const encoding = detectEncoding(buffer);
       const csvContent = buffer.toString(encoding as BufferEncoding);
       
       // Extrair nome da filial
-      const branchName = file.originalFilename?.replace('.csv', '').toUpperCase() || 'FILIAL_DESCONHECIDA';
-      
-      // Parse CSV sem headers
-      const parseResult = Papa.parse(csvContent, {
-        header: false,
-        skipEmptyLines: true,
-        delimiter: ';'
-      });
-      
-      const rows = parseResult.data as string[][];
-      
-      // Extrair nome da filial da primeira linha (fallback)
-      let extractedBranchName = branchName;
-      if (rows.length > 0 && rows[0][0]) {
-        const firstRowText = rows[0][0].toString().trim();
-        if (firstRowText && !firstRowText.includes('Período') && !firstRowText.includes('Vencimento')) {
-          extractedBranchName = firstRowText.toUpperCase();
-        }
-      }
+      const branchName = (file.originalFilename || 'FILIAL_DESCONHECIDA')
+        .replace(/\.(csv|txt)$/i, '')
+        .toUpperCase();
       
       const fileTransactions: TransactionData[] = [];
       
-      // Processar cada tipo de documento selecionado
+      // Processar cada tipo de documento selecionado usando a nova lógica
       for (const documentType of selectedTypes as ('A_PAGAR' | 'A_RECEBER')[]) {
+        console.log(`Processando tipo de documento: ${documentType} para arquivo: ${file.originalFilename}`);
         
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i];
-          if (!row || row.length < 4) continue;
+        // Usar a função de extração específica com a lógica correta
+        const documentosExtraidos = extrairTransacionadorEDocumento(csvContent, documentType, branchName);
+        
+        console.log(`Documentos extraídos para ${documentType}:`, documentosExtraidos.length);
+        
+        // Log dos primeiros documentos para debug
+        if (documentosExtraidos.length > 0) {
+          console.log('Primeiros documentos extraídos:', documentosExtraidos.slice(0, 3).map(doc => ({
+            transacionador: doc.transacionador,
+            numeroDocumento: doc.numeroDocumento,
+            valor: doc.valor,
+            dataVencimento: doc.dataVencimento.toLocaleDateString('pt-BR')
+          })));
+        }
+        
+        // Converter para o formato TransactionData (manter compatibilidade)
+        for (const doc of documentosExtraidos) {
+          const transaction: TransactionData = {
+            date: doc.dataVencimento,
+            supplier: doc.transacionador,        // TRANSACIONADOR CORRETO da coluna 2
+            docNumber: doc.numeroDocumento,      // NÚMERO DO DOCUMENTO CORRETO da coluna 3
+            value: doc.valor,
+            category: documentType === 'A_PAGAR' ? 'Contas a pagar- À vencer' : 'Contas a receber - A vencer',
+            branch: doc.filial,
+            documentType: doc.categoria,
+            sourceFile: file.originalFilename || `${branchName}.csv`
+          };
           
-          // Pular linhas de cabeçalho e informações
-          const firstCol = row[0]?.toString().trim();
-          if (!firstCol || 
-              firstCol.includes('CONTAS A') || 
-              firstCol.includes('PERÍODO') || 
-              firstCol.includes('Vencimento') ||
-              firstCol === '' ||
-              firstCol === ';;;') {
-            continue;
-          }
-          
-          // Para este formato: [data, fornecedor, documento, valor]
-          const dateStr = row[0]?.toString().trim();
-          const supplier = row[1]?.toString().trim();
-          const docNumber = row[2]?.toString().trim();
-          const valueStr = row[3]?.toString().trim();
-          
-          // Validar se é uma linha de dados válida
-          if (!dateStr || !supplier || !valueStr) continue;
-          
-          // Verificar se é uma data válida (formato DD/MM/YYYY)
-          if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) continue;
-          
-          // Verificar se o valor é monetário
-          if (!isMonetaryValue(valueStr)) continue;
-          
-          try {
-            const date = parseCSVDate(dateStr);
-            const value = parseMonetaryValue(valueStr);
-            
-            if (value > 0) {
-              const transaction: TransactionData = {
-                date,
-                supplier,
-                docNumber: docNumber || '',
-                value,
-                category: 'Contas a pagar- À vencer', // Inferir categoria baseado no arquivo
-                branch: extractedBranchName,
-                documentType: 'A_PAGAR' // Assumir A_PAGAR para este formato
-              };
-              
-              fileTransactions.push(transaction);
-              allTransactions.push(transaction);
-            }
-          } catch (error) {
-            console.warn(`Erro ao processar linha ${i}:`, error);
-          }
+          fileTransactions.push(transaction);
+          allTransactions.push(transaction);
         }
       }
       
       allFilesData.push({
         filename: file.originalFilename,
-        branch: extractedBranchName,
+        branch: branchName,
         transactions: fileTransactions,
         totalTransactions: fileTransactions.length
       });
@@ -285,6 +421,10 @@ export default async function handler(
       // Limpar arquivo temporário
       if (file.filepath && fs.existsSync(file.filepath)) {
         fs.unlinkSync(file.filepath);
+      }
+      } catch(processFileErr) {
+        console.error('Erro ao processar arquivo individual, continuando com os demais:', file?.originalFilename, processFileErr);
+        continue;
       }
     }
     
@@ -404,8 +544,26 @@ export default async function handler(
         totalReceivable
       },
       grandTotal: `R$ ${grandTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      totalInvoices: allTransactions.length
+      totalInvoices: allTransactions.length,
+      transactions: allTransactions.map(transaction => ({
+        vencimento: transaction.date.toLocaleDateString('pt-BR'),
+        transacionador: transaction.supplier,  // USANDO supplier CORRETO
+        documento: transaction.docNumber,      // USANDO docNumber CORRETO  
+        valor: `R$ ${transaction.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        valorNumerico: transaction.value,
+        documentType: transaction.documentType, // preserva tipo real (A_PAGAR / A_RECEBER)
+        filial: transaction.branch,             // preserva filial
+        sourceFile: transaction.sourceFile      // nome original do arquivo
+      }))
     };
+
+    // Cache dos dados processados para exportação posterior sem precisar reenviar pelo frontend
+    try {
+      const cachePath = path.join(tempDir, 'last_processed.json');
+      fs.writeFileSync(cachePath, JSON.stringify(processedData, null, 2), 'utf8');
+    } catch (cacheErr) {
+      console.warn('Não foi possível salvar cache de processedData:', cacheErr);
+    }
 
     return res.status(200).json({
       success: true,
@@ -414,10 +572,15 @@ export default async function handler(
       allFilesData
     });
   } catch (error) {
-    console.error('Error in upload-csv:', error)
+    console.error('=== ERROR IN UPLOAD-CSV ===');
+    console.error('Error type:', typeof error);
+    console.error('Error message:', error instanceof Error ? error.message : String(error));
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('Full error object:', error);
+    
     res.status(500).json({ 
       success: false, 
-      message: 'Erro interno do servidor' 
+      message: 'Erro interno do servidor: ' + (error instanceof Error ? error.message : String(error))
     })
   }
 }

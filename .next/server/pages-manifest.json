@@ -2,7 +2,5 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
-  "/api/export-excel": "pages/api/export-excel.js",
-  "/api/upload-csv": "pages/api/upload-csv.js"
+  "/": "pages/index.js"
 }
