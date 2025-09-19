@@ -7,7 +7,7 @@ import { DataPreview } from "@/components/data-preview";
 import { uploadCSVFile, downloadExcel, uploadCSVSummary, downloadSummaryExcel, SummaryData } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Upload, File, X, Download, Loader2, Calendar } from "lucide-react";
-import { ProcessedData } from "@/lib/schema";
+import { ProcessedData } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { format, parse } from 'date-fns';
@@ -19,6 +19,7 @@ type ReportInfoData = {
   startDate: string;
   endDate: string;
   categories: string[];
+  processedData?: any;
 };
 import { cn } from "@/lib/utils";
 
@@ -200,7 +201,8 @@ const Home: NextPage = () => {
       name: 'Relatório de Notas Fiscais',
       startDate: '',
       endDate: '',
-      categories: []
+      categories: [],
+      processedData: processedData // Pass the actual processed data
     };
     excelMutation.mutate(reportInfo);
   };
@@ -310,6 +312,18 @@ const Home: NextPage = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <a
+                href="/t014"
+                className="text-sm text-blue-600 hover:text-blue-700 hover:underline font-medium"
+              >
+                📊 Processador T014
+              </a>
+              <a
+                href="/processar-csv-real"
+                className="text-sm text-green-600 hover:text-green-700 hover:underline font-medium"
+              >
+                🔄 Dados Reais CSV
+              </a>
               <span className="text-sm text-muted-foreground">Versão 1.5.0</span>
             </div>
           </div>

@@ -6,7 +6,7 @@ import { DataPreview } from "@/components/data-preview";
 import { uploadCSVFile, downloadExcel, uploadCSVSummary, downloadSummaryExcel, SummaryData } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Upload, File, X, Download, Loader2, Calendar } from "lucide-react";
-import { ProcessedData } from "@/lib/schema";
+import { ProcessedData } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { format, parse } from 'date-fns';
