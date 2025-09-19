@@ -4,38 +4,14 @@ import fs from 'fs'
 import Papa from 'papaparse'
 import path from 'path'
 import { storage } from '../../lib/storage'
+import { ProcessedData as BaseProcessedData } from '@shared/schema'
 
-// Interfaces para tipos de dados processados
-interface ProcessedData {
-  branchTotals: Array<{
-    branch: string;
-    invoiceCount: number;
-    totalValue: string;
-    weekStart: Date;
-    weekEnd: Date;
-  }>;
-  dailyTotals: Array<{
-    date: Date;
-    dayOfWeek: string;
-    totalValue: string;
-    invoiceCount: number;
-    branch: string;
-  }>;
-  weeklyTotals: {
-    workingDaysTotal: string;
-    weekendTotal: string;
-    weekTotal: string;
-    workingDays: number;
-    weekendDays: number;
-    weekPeriod: string;
-    totalPayable: number;
-    totalReceivable: number;
-  };
-  grandTotal: string;
-  totalInvoices: number;
-  transactions: TransactionForExcel[]; // Adicionado para exportação Excel
+// Extend ProcessedData to include transactions for API processing
+interface ProcessedData extends BaseProcessedData {
+  transactions: TransactionForExcel[];
 }
 
+// Interfaces para tipos de dados processados
 interface TransactionData {
   date: Date;
   supplier: string;
@@ -649,10 +625,13 @@ export default async function handler(
     }
     // ===== FIM: GERAÇÃO DE summaryData =====
 
+    // Create response data without transactions to match client schema
+    const { transactions, ...clientProcessedData } = processedData;
+
     return res.status(200).json({
       success: true,
       message: `${csvFiles.length} arquivo(s) processado(s) com sucesso`,
-      data: processedData,
+      data: clientProcessedData,
       summaryData: storage.get('summaryData') || null,
       allFilesData
     });
