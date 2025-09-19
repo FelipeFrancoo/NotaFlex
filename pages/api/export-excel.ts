@@ -607,14 +607,15 @@ async function createAdvancedSummaryWorksheet(
         
         // Verificar mudança de data para total diário
         if (currentDate && currentDate !== invoiceDate && dailyTotal > 0) {
-          summarySheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
+          summarySheet.addRow(['', '', 'TOTAL', dailyTotal]);
           const totalRow = summarySheet.getRow(summaryCurrentRow);
           totalRow.eachCell((cell, colNumber) => {
             cell.style = {
               font: { bold: true },
               fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
               numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-              border: cellStyle.border
+              border: cellStyle.border,
+              alignment: colNumber === 3 ? { horizontal: 'center' as const } : undefined
             };
           });
           summaryCurrentRow++;
@@ -644,14 +645,15 @@ async function createAdvancedSummaryWorksheet(
       
       // Total final da categoria se houver dados pendentes
       if (dailyTotal > 0) {
-        summarySheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
+        summarySheet.addRow(['', '', 'TOTAL', dailyTotal]);
         const totalRow = summarySheet.getRow(summaryCurrentRow);
         totalRow.eachCell((cell, colNumber) => {
           cell.style = {
             font: { bold: true },
             fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
             numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-            border: cellStyle.border
+            border: cellStyle.border,
+            alignment: colNumber === 3 ? { horizontal: 'center' as const } : undefined
           };
         });
         summaryCurrentRow++;
@@ -763,12 +765,6 @@ async function createAdvancedBranchWorksheet(
     currentRow++;
   }
 
-  // Linha vazia
-  worksheet.addRow([]);
-  currentRow++;
-  worksheet.addRow([]);
-  currentRow++;
-
   // Detalhamento de transações por tipo
   if (branchInvoices.length > 0) {
     // Separar por tipo de documento
@@ -803,14 +799,15 @@ async function createAdvancedBranchWorksheet(
         
         // Verificar mudança de data para total diário
         if (currentDate && currentDate !== invoiceDate && dailyTotal > 0) {
-          worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
+          worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
           const totalRow = worksheet.getRow(currentRow);
           totalRow.eachCell((cell, colNumber) => {
             cell.style = {
               font: { bold: true },
               fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
               numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-              border: cellStyle.border
+              border: cellStyle.border,
+              alignment: colNumber === 3 ? { horizontal: 'center' as const } : undefined
             };
           });
           currentRow++;
@@ -839,14 +836,15 @@ async function createAdvancedBranchWorksheet(
 
       // Total final A_PAGAR
       if (dailyTotal > 0) {
-        worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
+        worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
         const totalRow = worksheet.getRow(currentRow);
         totalRow.eachCell((cell, colNumber) => {
           cell.style = {
             font: { bold: true },
             fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
             numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-            border: cellStyle.border
+            border: cellStyle.border,
+            alignment: colNumber === 3 ? { horizontal: 'center' as const } : undefined
           };
         });
         currentRow++;
@@ -895,14 +893,15 @@ async function createAdvancedBranchWorksheet(
         
         // Verificar mudança de data para total diário
         if (currentDate && currentDate !== invoiceDate && dailyTotal > 0) {
-          worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
+          worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
           const totalRow = worksheet.getRow(currentRow);
           totalRow.eachCell((cell, colNumber) => {
             cell.style = {
               font: { bold: true },
               fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
               numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-              border: cellStyle.border
+              border: cellStyle.border,
+              alignment: colNumber === 3 ? { horizontal: 'center' as const } : undefined
             };
           });
           currentRow++;
@@ -931,14 +930,15 @@ async function createAdvancedBranchWorksheet(
 
       // Total final A_RECEBER
       if (dailyTotal > 0) {
-        worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
+        worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
         const totalRow = worksheet.getRow(currentRow);
         totalRow.eachCell((cell, colNumber) => {
           cell.style = {
             font: { bold: true },
             fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
             numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-            border: cellStyle.border
+            border: cellStyle.border,
+            alignment: colNumber === 3 ? { horizontal: 'center' as const } : undefined
           };
         });
         currentRow++;
