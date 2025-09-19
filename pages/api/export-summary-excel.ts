@@ -1,235 +1,195 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-import * as ExcelJS from 'exceljs'
-import * as fs from 'fs'
-import * as path from 'path'
-import { getSummaryData } from './upload-csv-summary'
-import { DadosResumo, ResumoFilial } from '../../lib/resumo-processor'
+import { NextApiRequest, NextApiResponse } from 'next';
+import ExcelJS from 'exceljs';
+import { storage } from '../../lib/storage';
 
-// Estilos padronizados para Excel
-const borderStyle = {
-  top: { style: 'thin' as const },
-  left: { style: 'thin' as const },
-  bottom: { style: 'thin' as const },
-  right: { style: 'thin' as const }
-};
-
-const headerStyle = {
-  font: { bold: true, color: { argb: 'FFFFFF' } },
-  fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: '2F5597' } },
-  alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
-  border: borderStyle
-};
-
-const cellStyle = {
-  border: borderStyle,
-  fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F8F9FA' } }
-};
-
-const totalRowStyle = {
-  font: { bold: true, color: { argb: 'FFFFFF' } },
-  fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: '366092' } },
-  alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
-  border: borderStyle
-};
-
-// FUNÇÃO PRINCIPAL DE GERAÇÃO EXCEL
-async function gerarExcelResumo(summaryData: DadosResumo): Promise<ExcelJS.Workbook> {
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet('Resumo Total das Filiais');
-  
-  let currentRow = 1;
-  
-  // SEÇÃO 1: CABEÇALHO PRINCIPAL
-  adicionarTituloPrincipal(sheet, currentRow++, 'RESUMO TOTAL DAS FILIAIS');
-  currentRow++; // Linha vazia
-  
-  // SEÇÃO 2: TABELA DE FILIAIS
-  adicionarCabecalhoTabela(sheet, currentRow++, ['Filial', 'Total A Pagar', 'Total A Receber']);
-  
-  for (const branch of summaryData.branches) {
-    adicionarLinhaFilial(sheet, currentRow++, branch, cellStyle);
-  }
-  
-  currentRow++; // Linha vazia
-  
-  // SEÇÃO 3: TOTAIS GERAIS
-  adicionarTotalGeral(sheet, currentRow++, 'TOTAL GERAL A PAGAR', summaryData.grandTotalAPagar);
-  adicionarTotalGeral(sheet, currentRow++, 'TOTAL GERAL A RECEBER', summaryData.grandTotalAReceber);
-  adicionarTotalGeral(sheet, currentRow++, 'TOTAL GERAL', summaryData.grandTotal);
-  
-  currentRow++; // Linha vazia
-  
-  // SEÇÃO 4: TOTAIS POR DATA (se disponível)
-  if (summaryData.dateSpecificTotals.length > 0) {
-    adicionarSecaoTotaisPorData(sheet, currentRow, summaryData.dateSpecificTotals);
-  }
-  
-  // FORMATAÇÃO FINAL
-  formatarColunas(sheet);
-  
-  return workbook;
-}
-
-// FUNÇÕES DE FORMATAÇÃO ESPECÍFICAS
-function adicionarTituloPrincipal(sheet: ExcelJS.Worksheet, row: number, titulo: string) {
-  sheet.addRow([titulo, '', '']);
-  sheet.mergeCells(`A${row}:C${row}`);
-  sheet.getCell(`A${row}`).style = {
-    font: { bold: true, size: 16, color: { argb: 'FFFFFF' } },
-    alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
-    fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: '2F5597' } }
-  };
-  sheet.getRow(row).height = 35;
-}
-
-function adicionarCabecalhoTabela(sheet: ExcelJS.Worksheet, row: number, headers: string[]) {
-  sheet.addRow(headers);
-  const headerRow = sheet.getRow(row);
-  headerRow.eachCell((cell) => {
-    cell.style = headerStyle;
-  });
-  headerRow.height = 25;
-}
-
-function adicionarLinhaFilial(sheet: ExcelJS.Worksheet, row: number, branch: ResumoFilial, style: any) {
-  sheet.addRow([branch.name, branch.totalAPagar, branch.totalAReceber]);
-  
-  const sheetRow = sheet.getRow(row);
-  sheetRow.eachCell((cell, colNumber) => {
-    cell.style = style;
-    if (colNumber === 2 || colNumber === 3) {
-      cell.numFmt = 'R$ #,##0.00';
-    }
-  });
-}
-
-function adicionarTotalGeral(sheet: ExcelJS.Worksheet, row: number, label: string, value: number) {
-  sheet.addRow([label, value, '']);
-  
-  const totalRow = sheet.getRow(row);
-  totalRow.eachCell((cell, colNumber) => {
-    if (colNumber <= 2) {
-      cell.style = totalRowStyle;
-      if (colNumber === 2) {
-        cell.numFmt = 'R$ #,##0.00';
-      }
-    }
-  });
-  
-  // Mesclar células do label
-  sheet.mergeCells(`A${row}:A${row}`);
-}
-
-function adicionarSecaoTotaisPorData(sheet: ExcelJS.Worksheet, startRow: number, dateSpecificTotals: any[]) {
-  let currentRow = startRow;
-  
-  // Título da seção
-  sheet.addRow(['TOTAIS POR DATA', '', '']);
-  sheet.mergeCells(`A${currentRow}:C${currentRow}`);
-  sheet.getCell(`A${currentRow}`).style = {
-    font: { bold: true, size: 14, color: { argb: 'FFFFFF' } },
-    alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
-    fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: '1F4E79' } }
-  };
-  currentRow++;
-  
-  // Cabeçalho
-  sheet.addRow(['Data', 'Total', '']);
-  const headerRow = sheet.getRow(currentRow);
-  headerRow.eachCell((cell, colNumber) => {
-    if (colNumber <= 2) {
-      cell.style = headerStyle;
-    }
-  });
-  currentRow++;
-  
-  // Dados por data
-  for (const dateTotal of dateSpecificTotals) {
-    sheet.addRow([dateTotal.date, dateTotal.total, '']);
-    const dataRow = sheet.getRow(currentRow);
-    dataRow.eachCell((cell, colNumber) => {
-      if (colNumber <= 2) {
-        cell.style = cellStyle;
-        if (colNumber === 2) {
-          cell.numFmt = 'R$ #,##0.00';
-        }
-      }
-    });
-    currentRow++;
-  }
-}
-
-function formatarColunas(sheet: ExcelJS.Worksheet) {
-  sheet.getColumn(1).width = 35; // Filial
-  sheet.getColumn(2).width = 20; // Total A Pagar  
-  sheet.getColumn(3).width = 20; // Total A Receber
-}
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ success: false, message: 'Método não permitido' });
+    return res.status(405).json({ error: 'Método não permitido' });
   }
 
   try {
-    console.log('=== INICIANDO GERAÇÃO EXCEL RESUMO ===');
+    console.log('[EXPORT] Iniciando exportação Excel');
+    console.log('[EXPORT] Storage keys:', storage.keys());
+    console.log('[EXPORT] Storage summaryData exists:', !!storage.get('summaryData'));
     
-    // Tentar obter dados do storage
-    let summaryData = getSummaryData();
+    const summaryData = storage.get('summaryData');
     
-    // Se não há dados no storage, tentar carregar do cache
     if (!summaryData) {
-      try {
-        const cachePath = path.join(process.cwd(), 'temp', 'last_summary.json');
-        if (fs.existsSync(cachePath)) {
-          const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
-          summaryData = cached;
-          console.log('Dados carregados do cache:', cachePath);
+      console.log('[EXPORT] Nenhum dados encontrado no storage');
+      return res.status(400).json({ 
+        error: 'Nenhum dado de resumo encontrado. Faça upload dos arquivos CSV primeiro.',
+        debug: {
+          storageKeys: storage.keys(),
+          hasData: !!summaryData
         }
-      } catch (cacheError) {
-        console.warn('Erro ao carregar cache:', cacheError);
-      }
-    }
-    
-    if (!summaryData) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Nenhum dado para exportar. Faça o upload dos arquivos primeiro.' 
       });
     }
 
-    console.log('Dados encontrados:', {
-      branches: summaryData.branches.length,
+    console.log('[EXPORT] SummaryData encontrado:', {
+      branches: summaryData.branches?.length || 0,
+      dateSpecificTotals: summaryData.dateSpecificTotals?.length || 0,
       grandTotal: summaryData.grandTotal
     });
 
-    // Gerar workbook Excel
-    const workbook = await gerarExcelResumo(summaryData);
-    
-    // Configurar headers da resposta
-    const fileName = `resumo_total_filiais_${new Date().toISOString().split('T')[0]}.xlsx`;
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    
-    // Escrever workbook na resposta
-    await workbook.xlsx.write(res);
-    
-    console.log('Excel de resumo gerado com sucesso!');
-    res.end();
-    
-  } catch (error) {
-    console.error('=== ERRO NA GERAÇÃO DO EXCEL RESUMO ===');
-    console.error('Error type:', typeof error);
-    console.error('Error message:', error instanceof Error ? error.message : String(error));
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    
-    if (!res.headersSent) {
-      res.status(500).json({ 
-        success: false, 
-        message: 'Erro ao gerar Excel: ' + (error instanceof Error ? error.message : String(error))
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Resumo Total das Filiais');    // ESTILOS PADRONIZADOS OBRIGATÓRIOS
+    const headerStyle = {
+      font: { bold: true, color: { argb: 'FFFFFF' } },
+      fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: '2F5597' } },
+      alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+      border: {
+        top: { style: 'thin' as const }, left: { style: 'thin' as const },
+        bottom: { style: 'thin' as const }, right: { style: 'thin' as const }
+      }
+    };
+
+    const cellStyle = {
+      border: {
+        top: { style: 'thin' as const }, left: { style: 'thin' as const },
+        bottom: { style: 'thin' as const }, right: { style: 'thin' as const }
+      },
+      fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F8F9FA' } }
+    };
+
+    const titleStyle = {
+      font: { bold: true, size: 16, color: { argb: 'FFFFFF' } },
+      alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+      fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: '2F5597' } }
+    };
+
+    let currentRow = 1;
+
+    // SEÇÃO 1: TÍTULO
+    sheet.addRow(['RESUMO TOTAL DAS FILIAIS', '']);
+    sheet.mergeCells(`A${currentRow}:B${currentRow}`);
+    sheet.getCell(`A${currentRow}`).style = titleStyle;
+    sheet.getRow(currentRow).height = 35;
+    currentRow += 1; // Pular apenas 1 linha
+
+    // SEÇÃO 2: DADOS DAS FILIAIS
+    sheet.addRow(['Filial', 'Total A Pagar']);
+    sheet.getRow(currentRow).eachCell((cell, colNumber) => {
+      if (colNumber <= 2) cell.style = headerStyle;
+    });
+    currentRow++;
+
+    // Dados das filiais
+    for (const branch of summaryData.branches || []) {
+      sheet.addRow([branch.name, branch.totalAPagar || 0]);
+      const row = sheet.getRow(currentRow);
+      row.eachCell((cell, colNumber) => {
+        if (colNumber <= 2) {
+          cell.style = cellStyle;
+          if (colNumber === 2) cell.numFmt = 'R$ #,##0.00';
+        }
+      });
+      currentRow++;
+    }
+
+    // Linha de subtotal das filiais
+    if (summaryData.branches && summaryData.branches.length > 0) {
+      const subtotalRow = sheet.addRow([
+        'TOTAL FILIAIS',
+        summaryData.grandTotalAPagar || 0
+      ]);
+      subtotalRow.eachCell((cell, colNumber) => {
+        if (colNumber <= 2) {
+          cell.style = {
+            font: { bold: true, color: { argb: 'FFFFFF' } },
+            fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: '2F5597' } },
+            border: {
+              top: { style: 'thin' }, left: { style: 'thin' },
+              bottom: { style: 'thin' }, right: { style: 'thin' }
+            },
+            alignment: { horizontal: 'center', vertical: 'middle' }
+          } as any;
+          if (colNumber === 2) cell.numFmt = 'R$ #,##0.00';
+        }
+      });
+      subtotalRow.height = 22;
+      currentRow = subtotalRow.number + 1; // Próxima linha após subtotal
+      // Adiciona UMA linha em branco de espaçamento
+      const blankAfterSubtotal = sheet.addRow(['', '']);
+      currentRow = blankAfterSubtotal.number + 1;
+    }
+
+    // SEÇÃO 3: TOTAIS POR DATA (SE DISPONÍVEL)
+    if (summaryData.dateSpecificTotals && summaryData.dateSpecificTotals.length > 0) {
+      console.log('[EXPORT] Adicionando seção TOTAL POR DIA DA SEMANA');
+      // Cria diretamente a linha de cabeçalho (sem deslocamento incorreto)
+      const headerRow = sheet.addRow(['TOTAL POR DIA DA SEMANA', 'Total']);
+      headerRow.eachCell((cell, colNumber) => {
+        if (colNumber <= 2) cell.style = headerStyle;
+      });
+      headerRow.height = 25;
+      currentRow = headerRow.number + 1;
+
+      // Ordenar datas cronologicamente
+      const sortedDateTotals = [...summaryData.dateSpecificTotals].sort((a, b) => {
+        const parseDate = (dateStr: string) => {
+          const parts = dateStr.split('/');
+          return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+        };
+        return parseDate(a.day).getTime() - parseDate(b.day).getTime();
+      });
+
+      let consolidatedGrandTotal = 0;
+
+      // Adicionar dados das datas com dia da semana
+      for (const dateData of sortedDateTotals) {
+        const parts = dateData.day.split('/');
+        let dayOfWeek = '';
+        if (parts.length === 3) {
+          const date = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+          dayOfWeek = dayNames[date.getDay()];
+        }
+        
+        const dateWithDay = dayOfWeek ? `${dateData.day} (${dayOfWeek})` : dateData.day;
+        
+        const dataRow = sheet.addRow([dateWithDay, dateData.total]);
+        dataRow.eachCell((cell, colNumber) => {
+          if (colNumber <= 2) {
+            cell.style = cellStyle;
+            if (colNumber === 2) cell.numFmt = 'R$ #,##0.00';
+          }
+        });
+        consolidatedGrandTotal += dateData.total;
+        currentRow = dataRow.number + 1;
+      }
+
+      // TOTAL GERAL FINAL
+      const consolidatedTotalRow = sheet.addRow(['TOTAL GERAL (Datas)', consolidatedGrandTotal]);
+      consolidatedTotalRow.eachCell((cell, colNumber) => {
+        if (colNumber <= 2) {
+          cell.style = {
+            font: { bold: true, color: { argb: 'FFFFFF' } },
+            fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: '2F5597' } },
+            border: {
+              top: { style: 'thin' as const }, left: { style: 'thin' as const },
+              bottom: { style: 'thin' as const }, right: { style: 'thin' as const }
+            },
+            alignment: { horizontal: 'center' as const, vertical: 'middle' as const }
+          };
+          if (colNumber === 2) cell.numFmt = 'R$ #,##0.00';
+        }
       });
     }
+
+    // CONFIGURAÇÃO DE LARGURAS DAS COLUNAS
+    sheet.getColumn(1).width = 35; // Filial
+    sheet.getColumn(2).width = 22; // Total A Pagar
+
+    // HEADERS DE RESPOSTA PARA DOWNLOAD
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="resumo_total_filiais_${new Date().toISOString().split('T')[0]}.xlsx"`);
+
+    // ESCRITA E ENVIO DO ARQUIVO
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (error) {
+    console.error('Erro na exportação do resumo Excel:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 }
