@@ -5,6 +5,7 @@ import Papa from 'papaparse'
 import path from 'path'
 import { storage } from '../../lib/storage'
 import { ProcessedData as BaseProcessedData } from '@shared/schema'
+import { randomUUID } from 'crypto';
 
 // Extend ProcessedData to include transactions for API processing
 interface ProcessedData extends BaseProcessedData {
@@ -484,6 +485,7 @@ export default async function handler(
     
     // Converter Maps para arrays
     const branchTotals = Array.from(branchTotalsMap.entries()).map(([branch, data]) => ({
+      id: randomUUID(),
       branch,
       invoiceCount: data.invoiceCount,
       totalValue: `R$ ${data.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
@@ -492,6 +494,7 @@ export default async function handler(
     }));
     
     const dailyTotals = Array.from(dailyTotalsMap.values()).map(data => ({
+      id: randomUUID(),
       ...data,
       totalValue: `R$ ${data.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
     }));
