@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import ExcelJS from 'exceljs'
 import fs from 'fs'
+import path from 'path'
 
 // Interface para dados de invoice individual
 interface InvoiceData {
@@ -101,27 +102,158 @@ export default async function handler(
   console.log('Method:', req.method)
   
   try {
-    // Extrair informações do relatório
-    const { name: reportName, startDate, endDate, categories } = req.body || {};
+  // Extrair informações do relatório com proteção caso body seja undefined
+  const body = (req as any).body || {};
+  const { name: reportName, startDate, endDate, categories, processedData } = body;
     
     let summaryData: SummaryData | null = null;
     let allInvoices: InvoiceData[] = [];
     let allBranchSummaries: BranchSummary[] = [];
 
-    // Verificar se existe dados de resumo em sessão/cache ou usar dados hardcoded
-    if (req.method === 'POST' && req.body) {
-      console.log('Dados recebidos no body:', req.body);
+    // Verificar se existe dados processados reais do upload-csv
+    if (req.method === 'POST') {
+      console.log('=== DADOS RECEBIDOS NO EXPORT-EXCEL ===');
+      console.log('Has processedData:', !!body.processedData);
       
-      if (req.body.summaryData) {
-        summaryData = req.body.summaryData;
+      if (body.processedData && body.processedData.transactions) {
+        console.log('=== USANDO DADOS REAIS DO UPLOAD ===');
+        console.log('Total transactions:', body.processedData.transactions.length);
+        console.log('Primeiras transações:', body.processedData.transactions.slice(0, 3));
+        
+        // Converter dados reais para formato esperado pelo Excel
+        const realData = body.processedData;
+        
+        // Agrupar transações por filial para criar summaryData
+        const branchMap = new Map<string, {totalAPagar: number, totalAReceber: number}>();
+        const allTransactions: InvoiceData[] = [];
+        
+        realData.transactions.forEach((transaction: any, index: number) => {
+          const branch = transaction.filial || realData.branchTotals?.[0]?.branch || 'FILIAL PRINCIPAL';
+          
+          if (!branchMap.has(branch)) {
+            branchMap.set(branch, {totalAPagar: 0, totalAReceber: 0});
+          }
+          
+          const branchData = branchMap.get(branch)!;
+          const valorNumerico = transaction.valorNumerico || 0;
+          // Usar tipo vindo do processamento (valor default A_PAGAR caso ausente)
+          const documentType: 'A_PAGAR' | 'A_RECEBER' = transaction.documentType === 'A_RECEBER' ? 'A_RECEBER' : 'A_PAGAR';
+          
+          if (documentType === 'A_PAGAR') {
+            branchData.totalAPagar += Math.abs(valorNumerico);
+          } else {
+            branchData.totalAReceber += Math.abs(valorNumerico);
+          }
+          
+          // Converter para formato InvoiceData
+          allTransactions.push({
+            id: `real_${index}`,
+            branch: branch,
+            invoiceNumber: transaction.documento || `DOC-${index}`,
+            date: new Date(transaction.vencimento || new Date()),
+            value: transaction.valor || `R$ 0,00`,
+            supplier: transaction.transacionador || 'FORNECEDOR NÃO IDENTIFICADO',
+            documentType: documentType,
+            sourceFile: `${branch}.csv`,
+            valueNumeric: Math.abs(valorNumerico)
+          });
+        });
+        
+        // Criar summaryData a partir dos dados reais
+        const branches = Array.from(branchMap.entries()).map(([name, totals]) => ({
+          name,
+          totalAPagar: totals.totalAPagar,
+          totalAReceber: totals.totalAReceber,
+          total: totals.totalAPagar + totals.totalAReceber
+        }));
+        
+        summaryData = {
+          branches,
+          dateSpecificTotals: [],
+          grandTotal: branches.reduce((sum, b) => sum + b.total, 0),
+          grandTotalAPagar: branches.reduce((sum, b) => sum + b.totalAPagar, 0),
+          grandTotalAReceber: branches.reduce((sum, b) => sum + b.totalAReceber, 0)
+        };
+        
+        allInvoices = allTransactions;
+        allBranchSummaries = branches.map(branch => ({
+          branch: branch.name,
+          invoiceCount: allTransactions.filter(inv => inv.branch === branch.name).length,
+          totalValue: branch.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+        }));
+        
+        console.log('=== DADOS CONVERTIDOS ===');
+        console.log('Branches criadas:', branches.length);
+        console.log('Total invoices:', allInvoices.length);
+        console.log('Summary grandTotal:', summaryData.grandTotal);
+      } else if (body.summaryData) {
+        console.log('=== USANDO DADOS FORNECIDOS NO BODY ===');
+        summaryData = body.summaryData;
+      } else {
+        // Tentativa de fallback: carregar cache de upload-csv
+        try {
+          const cachePath = path.join(process.cwd(), 'temp', 'last_processed.json');
+          if (fs.existsSync(cachePath)) {
+            console.log('Carregando processedData do cache local (last_processed.json)');
+            const cached = JSON.parse(fs.readFileSync(cachePath, 'utf8'));
+            if (cached && cached.transactions) {
+              body.processedData = cached; // reter em memória local
+              console.log('Reinvocando processamento com cache');
+              // Forçar pequena recursão lógica manual: duplicar bloco sem recursão HTTP
+              const realData = cached;
+              const branchMap = new Map<string, {totalAPagar: number, totalAReceber: number}>();
+              const allTransactions: InvoiceData[] = [];
+              realData.transactions.forEach((transaction: any, index: number) => {
+                const branch = transaction.filial || realData.branchTotals?.[0]?.branch || 'FILIAL PRINCIPAL';
+                if (!branchMap.has(branch)) branchMap.set(branch, {totalAPagar: 0, totalAReceber: 0});
+                const branchData = branchMap.get(branch)!;
+                const valorNumerico = transaction.valorNumerico || 0;
+                const documentType: 'A_PAGAR' | 'A_RECEBER' = transaction.documentType === 'A_RECEBER' ? 'A_RECEBER' : 'A_PAGAR';
+                if (documentType === 'A_PAGAR') branchData.totalAPagar += Math.abs(valorNumerico); else branchData.totalAReceber += Math.abs(valorNumerico);
+                allTransactions.push({
+                  id: `real_${index}`,
+                  branch: branch,
+                  invoiceNumber: transaction.documento || `DOC-${index}`,
+                  date: new Date(transaction.vencimento || new Date()),
+                  value: transaction.valor || `R$ 0,00`,
+                  supplier: transaction.transacionador || 'FORNECEDOR NÃO IDENTIFICADO',
+                  documentType: documentType,
+                  sourceFile: `${branch}.csv`,
+                  valueNumeric: Math.abs(valorNumerico)
+                });
+              });
+              const branches = Array.from(branchMap.entries()).map(([name, totals]) => ({
+                name,
+                totalAPagar: totals.totalAPagar,
+                totalAReceber: totals.totalAReceber,
+                total: totals.totalAPagar + totals.totalAReceber
+              }));
+              summaryData = {
+                branches,
+                dateSpecificTotals: [],
+                grandTotal: branches.reduce((sum, b) => sum + b.total, 0),
+                grandTotalAPagar: branches.reduce((sum, b) => sum + b.totalAPagar, 0),
+                grandTotalAReceber: branches.reduce((sum, b) => sum + b.totalAReceber, 0)
+              };
+              allInvoices = allTransactions;
+              allBranchSummaries = branches.map(branch => ({
+                branch: branch.name,
+                invoiceCount: allTransactions.filter(inv => inv.branch === branch.name).length,
+                totalValue: branch.total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+              }));
+            }
+          }
+        } catch (cacheErr) {
+          console.warn('Falha ao carregar cache de processedData:', cacheErr);
+        }
       }
       
-      if (req.body.allInvoices) {
-        allInvoices = req.body.allInvoices;
+      if (body.allInvoices) {
+        allInvoices = body.allInvoices;
       }
       
-      if (req.body.allBranchSummaries) {
-        allBranchSummaries = req.body.allBranchSummaries;
+      if (body.allBranchSummaries) {
+        allBranchSummaries = body.allBranchSummaries;
       }
     }
 
@@ -203,9 +335,12 @@ export default async function handler(
     );
     
     console.log('Criando abas individuais por filial...');
+    // Garantir nomes únicos das abas de filiais
+    const usedNames = new Set<string>();
     for (const branch of summaryData.branches) {
       const branchInvoices = allInvoices.filter(inv => inv.branch === branch.name);
-      await createAdvancedBranchWorksheet(workbook, branch, branchInvoices);
+      const sheetName = generateUniqueSheetName(workbook, branch.name, usedNames);
+      await createAdvancedBranchWorksheet(workbook, branch, branchInvoices, sheetName);
     }
 
     // Configurar resposta HTTP
@@ -371,14 +506,15 @@ async function createAdvancedSummaryWorksheet(
         
         // Verificar mudança de data para total diário
         if (currentDate && currentDate !== invoiceDate && dailyTotal > 0) {
-          summarySheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
+          summarySheet.addRow(['', '', 'TOTAL', dailyTotal]);
           const totalRow = summarySheet.getRow(summaryCurrentRow);
           totalRow.eachCell((cell, colNumber) => {
             cell.style = {
               font: { bold: true },
               fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
               numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-              border: cellStyle.border
+              border: cellStyle.border,
+              alignment: { horizontal: 'center', vertical: 'middle' }
             };
           });
           summaryCurrentRow++;
@@ -408,14 +544,15 @@ async function createAdvancedSummaryWorksheet(
       
       // Total final da categoria se houver dados pendentes
       if (dailyTotal > 0) {
-        summarySheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
+        summarySheet.addRow(['', '', 'TOTAL', dailyTotal]);
         const totalRow = summarySheet.getRow(summaryCurrentRow);
         totalRow.eachCell((cell, colNumber) => {
           cell.style = {
             font: { bold: true },
             fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
             numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-            border: cellStyle.border
+            border: cellStyle.border,
+            alignment: { horizontal: 'center', vertical: 'middle' }
           };
         });
         summaryCurrentRow++;
@@ -463,15 +600,16 @@ async function createAdvancedSummaryWorksheet(
 async function createAdvancedBranchWorksheet(
   workbook: ExcelJS.Workbook, 
   branch: BranchData, 
-  branchInvoices: InvoiceData[]
+  branchInvoices: InvoiceData[],
+  forcedName?: string
 ) {
-  let cleanBranchName = branch.name.replace(/[\/\\\?\*\[\]]/g, '_').substring(0, 25);
+  let cleanBranchName = (forcedName || branch.name).replace(/[\/\\\?\*\[\]]/g, '_').substring(0, 25);
   const worksheet = workbook.addWorksheet(cleanBranchName);
   let currentRow = 1;
 
   // Título da filial
   const titleRow = worksheet.addRow([`DETALHAMENTO - ${branch.name}`]);
-  worksheet.mergeCells(`A${currentRow}:E${currentRow}`);
+  worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
   titleRow.getCell(1).style = titleStyle;
   titleRow.height = 30;
   currentRow++;
@@ -484,7 +622,7 @@ async function createAdvancedBranchWorksheet(
     const periodText = `PERÍODO: ${startDate.toLocaleDateString('pt-BR')} - ${endDate.toLocaleDateString('pt-BR')}`;
     
     worksheet.addRow([periodText]);
-    worksheet.mergeCells(`A${currentRow}:E${currentRow}`);
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
     worksheet.getCell(`A${currentRow}`).style = {
       font: { bold: true, size: 12 },
       fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'E7E6E6' } },
@@ -493,38 +631,7 @@ async function createAdvancedBranchWorksheet(
     currentRow++;
   }
 
-  // Linha vazia
-  worksheet.addRow([]);
-  currentRow++;
-
-  // Resumo da filial
-  const resumoRow = worksheet.addRow(['RESUMO DA FILIAL']);
-  worksheet.mergeCells(`A${currentRow}:E${currentRow}`);
-  resumoRow.getCell(1).style = subHeaderStyle;
-  resumoRow.height = 25;
-  currentRow++;
-
-  worksheet.addRow(['Total A Pagar:', `R$ ${branch.totalAPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]);
-  currentRow++;
-  worksheet.addRow(['Total A Receber:', `R$ ${branch.totalAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]);
-  currentRow++;
-
-  const saldoLiquido = branch.totalAReceber - branch.totalAPagar;
-  const saldoRow = worksheet.addRow(['Saldo Líquido:', `R$ ${saldoLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]);
-  
-  // Colorir saldo líquido
-  const saldoCell = saldoRow.getCell(2);
-  saldoCell.font = { 
-    bold: true, 
-    color: { argb: saldoLiquido > 0 ? '008000' : 'FF0000' }
-  };
-  currentRow++;
-
-  // Linha vazia
-  worksheet.addRow([]);
-  currentRow++;
-  worksheet.addRow([]);
-  currentRow++;
+  // Removido espaçamento extra solicitado (linhas vazias após período)
 
   // Detalhamento de transações por tipo
   if (branchInvoices.length > 0) {
@@ -535,7 +642,7 @@ async function createAdvancedBranchWorksheet(
     // Processar A_PAGAR
     if (apagarInvoices.length > 0) {
       const aPagarHeaderRow = worksheet.addRow(['CONTAS A PAGAR']);
-      worksheet.mergeCells(`A${currentRow}:E${currentRow}`);
+      worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
       aPagarHeaderRow.getCell(1).style = subHeaderStyle;
       currentRow++;
 
@@ -543,7 +650,7 @@ async function createAdvancedBranchWorksheet(
       currentRow++;
 
       // Cabeçalhos das transações A_PAGAR
-      const transHeaderRow = worksheet.addRow(['Vencimento', 'Transacionador', 'Documento', 'Valor', 'Status']);
+      const transHeaderRow = worksheet.addRow(['Vencimento', 'Transacionador', 'Documento', 'Valor']);
       transHeaderRow.eachCell((cell) => {
         cell.style = headerStyle;
       });
@@ -560,14 +667,15 @@ async function createAdvancedBranchWorksheet(
         
         // Verificar mudança de data para total diário
         if (currentDate && currentDate !== invoiceDate && dailyTotal > 0) {
-          worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal, '']);
+          worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
           const totalRow = worksheet.getRow(currentRow);
           totalRow.eachCell((cell, colNumber) => {
             cell.style = {
               font: { bold: true },
               fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
               numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-              border: cellStyle.border
+              border: cellStyle.border,
+              alignment: { horizontal: 'center', vertical: 'middle' }
             };
           });
           currentRow++;
@@ -578,8 +686,7 @@ async function createAdvancedBranchWorksheet(
           invoiceDate,
           invoice.supplier,
           invoice.invoiceNumber,
-          invoice.valueNumeric,
-          'Pendente'
+          invoice.valueNumeric
         ]);
 
         const row = worksheet.getRow(currentRow);
@@ -597,20 +704,21 @@ async function createAdvancedBranchWorksheet(
 
       // Total final A_PAGAR
       if (dailyTotal > 0) {
-        worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal, '']);
+        worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
         const totalRow = worksheet.getRow(currentRow);
         totalRow.eachCell((cell, colNumber) => {
           cell.style = {
             font: { bold: true },
             fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
             numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-            border: cellStyle.border
+            border: cellStyle.border,
+            alignment: { horizontal: 'center', vertical: 'middle' }
           };
         });
         currentRow++;
       }
 
-      const totalAPagarRow = worksheet.addRow(['', '', 'TOTAL A PAGAR', branch.totalAPagar, '']);
+      const totalAPagarRow = worksheet.addRow(['', '', 'TOTAL A PAGAR', branch.totalAPagar]);
       totalAPagarRow.eachCell((cell, colNumber) => {
         cell.style = {
           ...totalRowStyle,
@@ -628,7 +736,7 @@ async function createAdvancedBranchWorksheet(
     // Processar A_RECEBER
     if (areceberInvoices.length > 0) {
       const aReceberHeaderRow = worksheet.addRow(['CONTAS A RECEBER']);
-      worksheet.mergeCells(`A${currentRow}:E${currentRow}`);
+      worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
       aReceberHeaderRow.getCell(1).style = subHeaderStyle;
       currentRow++;
 
@@ -636,7 +744,7 @@ async function createAdvancedBranchWorksheet(
       currentRow++;
 
       // Cabeçalhos das transações A_RECEBER
-      const transHeaderRow = worksheet.addRow(['Vencimento', 'Cliente', 'Documento', 'Valor', 'Status']);
+      const transHeaderRow = worksheet.addRow(['Vencimento', 'Cliente', 'Documento', 'Valor']);
       transHeaderRow.eachCell((cell) => {
         cell.style = headerStyle;
       });
@@ -653,14 +761,15 @@ async function createAdvancedBranchWorksheet(
         
         // Verificar mudança de data para total diário
         if (currentDate && currentDate !== invoiceDate && dailyTotal > 0) {
-          worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal, '']);
+          worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
           const totalRow = worksheet.getRow(currentRow);
           totalRow.eachCell((cell, colNumber) => {
             cell.style = {
               font: { bold: true },
               fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
               numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-              border: cellStyle.border
+              border: cellStyle.border,
+              alignment: { horizontal: 'center', vertical: 'middle' }
             };
           });
           currentRow++;
@@ -671,8 +780,7 @@ async function createAdvancedBranchWorksheet(
           invoiceDate,
           invoice.supplier,
           invoice.invoiceNumber,
-          invoice.valueNumeric,
-          'Pendente'
+          invoice.valueNumeric
         ]);
 
         const row = worksheet.getRow(currentRow);
@@ -690,20 +798,21 @@ async function createAdvancedBranchWorksheet(
 
       // Total final A_RECEBER
       if (dailyTotal > 0) {
-        worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal, '']);
+        worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
         const totalRow = worksheet.getRow(currentRow);
         totalRow.eachCell((cell, colNumber) => {
           cell.style = {
             font: { bold: true },
             fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
             numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-            border: cellStyle.border
+            border: cellStyle.border,
+            alignment: { horizontal: 'center', vertical: 'middle' }
           };
         });
         currentRow++;
       }
 
-      const totalAReceberRow = worksheet.addRow(['', '', 'TOTAL A RECEBER', branch.totalAReceber, '']);
+      const totalAReceberRow = worksheet.addRow(['', '', 'TOTAL A RECEBER', branch.totalAReceber]);
       totalAReceberRow.eachCell((cell, colNumber) => {
         cell.style = {
           ...totalRowStyle,
@@ -717,7 +826,7 @@ async function createAdvancedBranchWorksheet(
   } else {
     // Mensagem quando não há transações detalhadas
     const noDataRow = worksheet.addRow(['TRANSAÇÕES DETALHADAS']);
-    worksheet.mergeCells(`A${currentRow}:E${currentRow}`);
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
     noDataRow.getCell(1).style = subHeaderStyle;
     currentRow++;
 
@@ -732,8 +841,7 @@ async function createAdvancedBranchWorksheet(
     { width: 15 }, // Vencimento
     { width: 40 }, // Transacionador/Cliente
     { width: 20 }, // Documento
-    { width: 18 }, // Valor
-    { width: 12 }  // Status
+    { width: 18 }  // Valor
   ];
 }
 
@@ -816,7 +924,7 @@ async function createBranchWorksheet(workbook: ExcelJS.Workbook, branch: BranchD
   
   // Título da filial
   const titleRow = worksheet.addRow([`DETALHAMENTO - ${branch.name}`]);
-  worksheet.mergeCells('A1:E1');
+  worksheet.mergeCells('A1:D1');
   titleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
   titleRow.getCell(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 14 };
   titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
@@ -824,34 +932,10 @@ async function createBranchWorksheet(workbook: ExcelJS.Workbook, branch: BranchD
   
   worksheet.addRow([]); // Linha vazia
   
-  // Resumo da filial
-  const resumoRow = worksheet.addRow(['RESUMO DA FILIAL']);
-  worksheet.mergeCells('A3:E3');
-  resumoRow.getCell(1).font = { bold: true, size: 12 };
-  resumoRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
-  resumoRow.getCell(1).alignment = { horizontal: 'center' };
-  
-  worksheet.addRow(['Total A Pagar:', `R$ ${branch.totalAPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]);
-  worksheet.addRow(['Total A Receber:', `R$ ${branch.totalAReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]);
-  
-  const saldoLiquido = branch.totalAReceber - branch.totalAPagar;
-  const saldoRow = worksheet.addRow(['Saldo Líquido:', `R$ ${saldoLiquido.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`]);
-  
-  // Colorir saldo líquido
-  const saldoCell = saldoRow.getCell(2);
-  if (saldoLiquido > 0) {
-    saldoCell.font = { color: { argb: 'FF008000' }, bold: true }; // Verde
-  } else if (saldoLiquido < 0) {
-    saldoCell.font = { color: { argb: 'FFFF0000' }, bold: true }; // Vermelho
-  }
-  
-  worksheet.addRow([]); // Linha vazia
-  worksheet.addRow([]); // Linha vazia
-  
   // Detalhamento de transações (se disponível)
   if (processedData && processedData.transactions.length > 0) {
     const transactionsHeaderRow = worksheet.addRow(['DETALHAMENTO DE TRANSAÇÕES']);
-    worksheet.mergeCells(`A${worksheet.rowCount}:E${worksheet.rowCount}`);
+    worksheet.mergeCells(`A${worksheet.rowCount}:D${worksheet.rowCount}`);
     transactionsHeaderRow.getCell(1).font = { bold: true, size: 12 };
     transactionsHeaderRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
     transactionsHeaderRow.getCell(1).alignment = { horizontal: 'center' };
@@ -859,25 +943,23 @@ async function createBranchWorksheet(workbook: ExcelJS.Workbook, branch: BranchD
     worksheet.addRow([]); // Linha vazia
     
     // Cabeçalhos das transações
-    const transHeaderRow = worksheet.addRow(['Vencimento', 'Transacionador', 'Documento', 'Valor', 'Tipo']);
+    const transHeaderRow = worksheet.addRow(['Vencimento', 'Transacionador', 'Documento', 'Valor']);
     transHeaderRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
     transHeaderRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
     
     // Dados das transações
     processedData.transactions.forEach(transaction => {
-      const tipo = transaction.valorNumerico > 0 ? 'A Pagar' : 'A Receber';
       worksheet.addRow([
         transaction.vencimento,
         transaction.transacionador,
         transaction.documento,
-        transaction.valor,
-        tipo
+        transaction.valor
       ]);
     });
   } else {
     // Mensagem quando não há transações detalhadas
     const noDataRow = worksheet.addRow(['TRANSAÇÕES DETALHADAS']);
-    worksheet.mergeCells(`A${worksheet.rowCount}:E${worksheet.rowCount}`);
+    worksheet.mergeCells(`A${worksheet.rowCount}:D${worksheet.rowCount}`);
     noDataRow.getCell(1).font = { bold: true, size: 12 };
     noDataRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
     noDataRow.getCell(1).alignment = { horizontal: 'center' };
@@ -892,8 +974,7 @@ async function createBranchWorksheet(workbook: ExcelJS.Workbook, branch: BranchD
     { width: 15 }, // Vencimento
     { width: 25 }, // Transacionador
     { width: 15 }, // Documento
-    { width: 18 }, // Valor
-    { width: 12 }  // Tipo
+    { width: 18 }  // Valor
   ];
   
   // Adicionar bordas nas células importantes
@@ -910,4 +991,24 @@ async function createBranchWorksheet(workbook: ExcelJS.Workbook, branch: BranchD
       }
     });
   });
+}
+
+// Gera nome de planilha único evitando colisões após truncagem
+function generateUniqueSheetName(workbook: ExcelJS.Workbook, rawName: string, used: Set<string>): string {
+  const base = rawName
+    .normalize('NFD')
+    .replace(/[^A-Za-z0-9 _-]/g, '') // remove caracteres especiais
+    .replace(/\s+/g, '_')
+    .toUpperCase();
+  const maxLen = 25; // ExcelJS limita a 31, reservamos para sufixos
+  let name = base.substring(0, maxLen);
+  let counter = 1;
+  const existing = new Set(workbook.worksheets.map(ws => ws.name));
+  while (existing.has(name) || used.has(name)) {
+    const suffix = `_${counter++}`;
+    const trimmed = base.substring(0, maxLen - suffix.length);
+    name = trimmed + suffix;
+  }
+  used.add(name);
+  return name;
 }
