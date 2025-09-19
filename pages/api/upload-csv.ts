@@ -3,6 +3,7 @@ import formidable from 'formidable'
 import fs from 'fs'
 import Papa from 'papaparse'
 import path from 'path'
+import { storage } from '../../lib/storage'
 
 // Interfaces para tipos de dados processados
 interface ProcessedData {
@@ -52,6 +53,9 @@ interface TransactionForExcel {
   documento: string;
   valor: string;
   valorNumerico: number;
+  documentType?: 'A_PAGAR' | 'A_RECEBER';
+  filial?: string;
+  sourceFile?: string;
 }
 
 interface DocumentoProcessado {
@@ -244,6 +248,11 @@ export default async function handler(
   }
 
   try {
+    // Opcional: limpar dados anteriores se solicitado
+    if (req.query.clearData === 'true') {
+      storage.delete('summaryData');
+      storage.delete('processedData');
+    }
     console.log('=== DEBUG UPLOAD CSV ===');
     console.log('Method:', req.method);
     console.log('Content-Type:', req.headers['content-type']);
@@ -565,10 +574,86 @@ export default async function handler(
       console.warn('Não foi possível salvar cache de processedData:', cacheErr);
     }
 
+    // ===== INÍCIO: GERAÇÃO DE summaryData PARA /api/export-summary-excel =====
+    try {
+      // Guardar processedData em memória também
+      storage.set('processedData', processedData);
+
+      // Mapear transações em estrutura compatível
+      interface SummaryBranch {
+        name: string; totalAPagar: number; totalAReceber: number; total: number;
+      }
+      const branchMap: Record<string, { pagar: number; receber: number }> = {};
+      const dateTotalsMap: Record<string, number> = {};
+
+      processedData.transactions.forEach(tr => {
+        const branch = tr.filial || tr.sourceFile?.replace(/\.csv$/i, '') || 'DESCONHECIDA';
+        if (!branchMap[branch]) branchMap[branch] = { pagar: 0, receber: 0 };
+        if (tr.documentType === 'A_PAGAR') branchMap[branch].pagar += tr.valorNumerico;
+        else if (tr.documentType === 'A_RECEBER') branchMap[branch].receber += tr.valorNumerico;
+
+        // Totais por data (usando apenas A_PAGAR para manter consistência com resumo anterior)
+        if (tr.documentType === 'A_PAGAR') {
+          const dateStr = tr.vencimento; // já em DD/MM/YYYY
+            if (!dateTotalsMap[dateStr]) dateTotalsMap[dateStr] = 0;
+            dateTotalsMap[dateStr] += tr.valorNumerico;
+        }
+      });
+
+      const branchesSummary: SummaryBranch[] = Object.entries(branchMap).map(([name, v]) => ({
+        name,
+        totalAPagar: v.pagar,
+        totalAReceber: v.receber,
+        total: v.pagar + v.receber
+      }));
+
+      // Construir dateSpecificTotals ordenado
+      const dateSpecificTotals = Object.entries(dateTotalsMap).map(([day, total]) => ({ day, total }))
+        .filter(d => /\d{1,2}\/\d{1,2}\/\d{4}/.test(d.day))
+        .sort((a, b) => {
+          const [da, ma, ya] = a.day.split('/').map(Number);
+          const [db, mb, yb] = b.day.split('/').map(Number);
+          return new Date(ya, ma - 1, da).getTime() - new Date(yb, mb - 1, db).getTime();
+        });
+
+      // DocumentDates com dia da semana (apenas dias úteis)
+      const documentDates = dateSpecificTotals.map(d => {
+        const [day, month, year] = d.day.split('/').map(Number);
+        const date = new Date(year, month - 1, day);
+        const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        return { day: d.day, dayOfWeek: dayNames[date.getDay()], total: d.total, date };
+      }).filter(item => {
+        const dow = item.date.getDay();
+        return dow >= 1 && dow <= 5; // dias úteis
+      }).sort((a, b) => a.date.getTime() - b.date.getTime())
+        .map(({ day, dayOfWeek, total }) => ({ day, dayOfWeek, total }));
+
+      const grandTotalAPagar = branchesSummary.reduce((s, b) => s + b.totalAPagar, 0);
+      const grandTotalAReceber = branchesSummary.reduce((s, b) => s + b.totalAReceber, 0);
+      const grandTotal = dateSpecificTotals.reduce((s, d) => s + d.total, 0);
+
+      const summaryData = {
+        branches: branchesSummary,
+        dailyTotals: [], // não utilizado no export atual
+        documentDates,
+        dateSpecificTotals,
+        grandTotal,
+        grandTotalAPagar,
+        grandTotalAReceber,
+        totalAPagar: grandTotalAPagar
+      };
+
+      storage.set('summaryData', summaryData);
+    } catch(summaryErr) {
+      console.warn('Falha ao gerar summaryData a partir de processedData:', summaryErr);
+    }
+    // ===== FIM: GERAÇÃO DE summaryData =====
+
     return res.status(200).json({
       success: true,
       message: `${csvFiles.length} arquivo(s) processado(s) com sucesso`,
       data: processedData,
+      summaryData: storage.get('summaryData') || null,
       allFilesData
     });
   } catch (error) {
