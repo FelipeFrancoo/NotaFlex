@@ -110,3 +110,62 @@ server/           # Backend Express
 shared/           # Tipos/Schema compartilhados
 attached_assets/  # Amostras CSV de teste
 ```
+
+## Extração isolada da seção "Contas a pagar- À vencer"
+
+Quando você precisa apenas extrair a tabela detalhada da seção "Contas a pagar- À vencer" de um CSV exportado (ignorar resumos e totais), use o utilitário `extract_data.js` na raiz.
+
+### Como funciona
+1. Localiza a primeira linha cuja primeira coluna seja exatamente `Contas a pagar- À vencer`.
+2. Procura até 8 linhas acima um cabeçalho que contenha colunas variantes de `DATA`, `TRANSACIONADOR`, `DOCUMENTO`, `VALOR` (aceitando sufixos numéricos: `DATA6`, `DOCUMENTO4`, etc.).
+3. Se não encontrar cabeçalho formal, aplica heurística de posições relativas.
+4. Percorre linhas subsequentes enquanto a primeira coluna continua igual a `Contas a pagar- À vencer`.
+5. Ignora automaticamente linhas de total diário (ex.: células contendo `Total 05/09/2025:`).
+6. Retorna objetos normalizados:
+   - `Vencimento` (DATA*)
+   - `Transacionador` (TRANSACIONADOR*)
+   - `Documento` (DOCUMENTO*)
+   - `Valor` (valor monetário original)
+   - `ValorNumber` (valor numérico parseado)
+
+### Execução
+```bash
+node extract_data.js "attached_assets/T014_VisaoGeralFluxoCaixaDetalhado (1) (3)_1756494215537.csv" > saida.json
+```
+
+### Exemplo de saída (cortado)
+```json
+[
+  {
+    "Vencimento": "01/09/2025",
+    "Transacionador": "GAIARDO COMERCIO E SERVICOS ELETRICOS LTDA",
+    "Documento": "27920",
+    "Valor": "R$10.166,67",
+    "ValorNumber": 10166.67
+  }
+]
+```
+
+### Teste rápido
+```bash
+node test_t014_processing.js
+```
+
+O teste valida:
+- Que pelo menos uma linha é extraída
+- Que nenhum total diário foi incluído
+- Que os campos exigidos estão presentes
+
+### Parser rápido (script `contas:parse`)
+
+Se você só precisa de uma saída JSON enxuta (sem `ValorNumber` e sem heurísticas extras) baseada exatamente nas linhas que começam com `Contas a pagar- À vencer`, use o script adicionado:
+
+1. Executar:
+```bash
+npm run contas:parse -- "attached_assets/T014_VisaoGeralFluxoCaixaDetalhado (3)_1756835522624.csv"
+```
+2. Saída: array de objetos `{ Vencimento, Transacionador, Documento, Valor }`.
+3. Linhas de totais ("Total dd/mm/yyyy:") são ignoradas automaticamente.
+
+Use este modo quando quiser algo imediato e direto para integração ou inspeção rápida.
+

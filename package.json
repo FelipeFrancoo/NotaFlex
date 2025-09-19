@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "contas:parse": "node ./scripts/runContasAPagar.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

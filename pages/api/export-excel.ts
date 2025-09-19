@@ -54,6 +54,28 @@ interface ProcessedData {
   summary: BranchData;
 }
 
+// Utilitário seguro para parse de datas DD/MM/AAAA
+function parsePtBrDate(dateStr: string | Date): Date {
+  if (dateStr instanceof Date) return dateStr;
+  if (typeof dateStr !== 'string') return new Date();
+  const trimmed = dateStr.trim();
+  const m = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) {
+    const d = parseInt(m[1], 10);
+    const mo = parseInt(m[2], 10) - 1;
+    const y = parseInt(m[3], 10);
+    const dt = new Date(y, mo, d);
+    // Validar (Date auto corrige overflow; precisamos garantir integridade)
+    if (dt.getFullYear() === y && dt.getMonth() === mo && dt.getDate() === d) {
+      return dt;
+    }
+  }
+  // Tentar fallback ISO
+  const iso = new Date(trimmed);
+  if (!isNaN(iso.getTime())) return iso;
+  return new Date(); // fallback seguro
+}
+
 // Estilos Excel obrigatórios
 const headerStyle = {
   font: { bold: true, color: { argb: 'FFFFFF' } },
@@ -98,13 +120,16 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  console.log('Iniciando geração do Excel...')
+  console.log('=== INICIANDO EXPORT-EXCEL ===')
   console.log('Method:', req.method)
+  console.log('Headers:', req.headers)
   
   try {
-  // Extrair informações do relatório com proteção caso body seja undefined
-  const body = (req as any).body || {};
-  const { name: reportName, startDate, endDate, categories, processedData } = body;
+    // Extrair informações do relatório com proteção caso body seja undefined
+    const body = (req as any).body || {};
+    console.log('Body keys:', Object.keys(body));
+    console.log('Body type:', typeof body);
+    const { name: reportName, startDate, endDate, categories, processedData } = body;
     
     let summaryData: SummaryData | null = null;
     let allInvoices: InvoiceData[] = [];
@@ -115,7 +140,7 @@ export default async function handler(
       console.log('=== DADOS RECEBIDOS NO EXPORT-EXCEL ===');
       console.log('Has processedData:', !!body.processedData);
       
-      if (body.processedData && body.processedData.transactions) {
+      if (body.processedData && Array.isArray(body.processedData.transactions)) {
         console.log('=== USANDO DADOS REAIS DO UPLOAD ===');
         console.log('Total transactions:', body.processedData.transactions.length);
         console.log('Primeiras transações:', body.processedData.transactions.slice(0, 3));
@@ -128,16 +153,40 @@ export default async function handler(
         const allTransactions: InvoiceData[] = [];
         
         realData.transactions.forEach((transaction: any, index: number) => {
-          const branch = transaction.filial || realData.branchTotals?.[0]?.branch || 'FILIAL PRINCIPAL';
-          
-          if (!branchMap.has(branch)) {
-            branchMap.set(branch, {totalAPagar: 0, totalAReceber: 0});
-          }
-          
-          const branchData = branchMap.get(branch)!;
-          const valorNumerico = transaction.valorNumerico || 0;
-          // Usar tipo vindo do processamento (valor default A_PAGAR caso ausente)
-          const documentType: 'A_PAGAR' | 'A_RECEBER' = transaction.documentType === 'A_RECEBER' ? 'A_RECEBER' : 'A_PAGAR';
+          try {
+            if (!transaction) {
+              console.warn('[EXPORT] Transação nula encontrada no índice:', index);
+              return;
+            }
+            console.log(`[EXPORT] Processando transação ${index}:`, {
+              vencimento: transaction.vencimento,
+              transacionador: transaction.transacionador,
+              valor: transaction.valorNumerico,
+              tipo: transaction.documentType
+            });
+            
+            const branch = transaction.filial || realData.branchTotals?.[0]?.branch || 'FILIAL PRINCIPAL';
+            const sourceFile = transaction.sourceFile || `${branch}.csv`;
+            
+            if (!branchMap.has(branch)) {
+              branchMap.set(branch, {totalAPagar: 0, totalAReceber: 0});
+            }
+            
+            const branchData = branchMap.get(branch)!;
+            const valorNumerico = transaction.valorNumerico || 0;
+            // Usar tipo vindo do processamento (valor default A_PAGAR caso ausente)
+            const documentType: 'A_PAGAR' | 'A_RECEBER' = transaction.documentType === 'A_RECEBER' ? 'A_RECEBER' : 'A_PAGAR';
+
+            // Parse data robusto
+            const parsedDate = parsePtBrDate(transaction.vencimento);
+            if (isNaN(parsedDate.getTime())) {
+              console.warn('[EXPORT] Ignorando transação com data inválida:', transaction.vencimento, transaction);
+              return;
+            }
+            if (typeof valorNumerico !== 'number' || isNaN(Number(valorNumerico))) {
+              console.warn('[EXPORT] Ignorando transação com valor inválido:', valorNumerico, transaction);
+              return;
+            }
           
           if (documentType === 'A_PAGAR') {
             branchData.totalAPagar += Math.abs(valorNumerico);
@@ -150,13 +199,16 @@ export default async function handler(
             id: `real_${index}`,
             branch: branch,
             invoiceNumber: transaction.documento || `DOC-${index}`,
-            date: new Date(transaction.vencimento || new Date()),
+            date: parsedDate,
             value: transaction.valor || `R$ 0,00`,
             supplier: transaction.transacionador || 'FORNECEDOR NÃO IDENTIFICADO',
             documentType: documentType,
-            sourceFile: `${branch}.csv`,
+            sourceFile: sourceFile,
             valueNumeric: Math.abs(valorNumerico)
           });
+          } catch (transactionErr) {
+            console.error('[EXPORT] Erro ao processar transação:', index, transactionErr, transaction);
+          }
         });
         
         // Criar summaryData a partir dos dados reais
@@ -203,25 +255,50 @@ export default async function handler(
               const realData = cached;
               const branchMap = new Map<string, {totalAPagar: number, totalAReceber: number}>();
               const allTransactions: InvoiceData[] = [];
-              realData.transactions.forEach((transaction: any, index: number) => {
-                const branch = transaction.filial || realData.branchTotals?.[0]?.branch || 'FILIAL PRINCIPAL';
-                if (!branchMap.has(branch)) branchMap.set(branch, {totalAPagar: 0, totalAReceber: 0});
-                const branchData = branchMap.get(branch)!;
-                const valorNumerico = transaction.valorNumerico || 0;
-                const documentType: 'A_PAGAR' | 'A_RECEBER' = transaction.documentType === 'A_RECEBER' ? 'A_RECEBER' : 'A_PAGAR';
-                if (documentType === 'A_PAGAR') branchData.totalAPagar += Math.abs(valorNumerico); else branchData.totalAReceber += Math.abs(valorNumerico);
-                allTransactions.push({
-                  id: `real_${index}`,
-                  branch: branch,
-                  invoiceNumber: transaction.documento || `DOC-${index}`,
-                  date: new Date(transaction.vencimento || new Date()),
-                  value: transaction.valor || `R$ 0,00`,
-                  supplier: transaction.transacionador || 'FORNECEDOR NÃO IDENTIFICADO',
-                  documentType: documentType,
-                  sourceFile: `${branch}.csv`,
-                  valueNumeric: Math.abs(valorNumerico)
+              try {
+                realData.transactions.forEach((transaction: any, index: number) => {
+                  try {
+                    console.log(`[EXPORT][CACHE] Processando transação ${index}:`, {
+                      vencimento: transaction.vencimento,
+                      transacionador: transaction.transacionador,
+                      valorNumerico: transaction.valorNumerico
+                    });
+                    
+                    if (!transaction) return;
+                    const branch = transaction.filial || realData.branchTotals?.[0]?.branch || 'FILIAL PRINCIPAL';
+                    const sourceFile = transaction.sourceFile || `${branch}.csv`;
+                    if (!branchMap.has(branch)) branchMap.set(branch, {totalAPagar: 0, totalAReceber: 0});
+                    const branchData = branchMap.get(branch)!;
+                    const valorNumerico = transaction.valorNumerico || 0;
+                    const documentType: 'A_PAGAR' | 'A_RECEBER' = transaction.documentType === 'A_RECEBER' ? 'A_RECEBER' : 'A_PAGAR';
+                    const parsedDate = parsePtBrDate(transaction.vencimento);
+                    if (isNaN(parsedDate.getTime())) {
+                      console.warn('[EXPORT][CACHE] Ignorando transação com data inválida:', transaction.vencimento);
+                      return;
+                    }
+                    if (typeof valorNumerico !== 'number' || isNaN(Number(valorNumerico))) {
+                      console.warn('[EXPORT][CACHE] Ignorando transação com valor inválido:', valorNumerico);
+                      return;
+                    }
+                    if (documentType === 'A_PAGAR') branchData.totalAPagar += Math.abs(valorNumerico); else branchData.totalAReceber += Math.abs(valorNumerico);
+                    allTransactions.push({
+                      id: `real_${index}`,
+                      branch: branch,
+                      invoiceNumber: transaction.documento || `DOC-${index}`,
+                      date: parsedDate,
+                      value: transaction.valor || `R$ 0,00`,
+                      supplier: transaction.transacionador || 'FORNECEDOR NÃO IDENTIFICADO',
+                      documentType: documentType,
+                      sourceFile: sourceFile,
+                      valueNumeric: Math.abs(valorNumerico)
+                    });
+                  } catch (transactionErr) {
+                    console.error(`[EXPORT][CACHE] Erro ao processar transação ${index}:`, transactionErr);
+                  }
                 });
-              });
+              } catch (transactionsErr) {
+                console.error('[EXPORT][CACHE] Erro ao processar transações do cache:', transactionsErr);
+              }
               const branches = Array.from(branchMap.entries()).map(([name, totals]) => ({
                 name,
                 totalAPagar: totals.totalAPagar,
@@ -258,7 +335,7 @@ export default async function handler(
     }
 
     // Se não temos dados, usar dados hardcoded para demonstração
-    if (!summaryData || summaryData.branches.length === 0) {
+    if (!summaryData || !summaryData.branches || summaryData.branches.length === 0) {
       console.log('Usando dados hardcoded para demonstração');
       summaryData = {
         branches: [
@@ -321,6 +398,17 @@ export default async function handler(
       actualEndDate = new Date();
     }
 
+    // Log estatístico para debug multi-file
+    const distinctFiles = Array.from(new Set(allInvoices.map(i => i.sourceFile)));
+    const distinctBranches = Array.from(new Set(allInvoices.map(i => i.branch)));
+    console.log('[EXPORT] Estatísticas:', {
+      totalInvoices: allInvoices.length,
+      distinctFiles: distinctFiles.length,
+      files: distinctFiles,
+      distinctBranches: distinctBranches.length,
+      branches: distinctBranches
+    });
+
     // Criar workbook
     const workbook = new ExcelJS.Workbook();
     
@@ -335,12 +423,12 @@ export default async function handler(
     );
     
     console.log('Criando abas individuais por filial...');
-    // Garantir nomes únicos das abas de filiais
-    const usedNames = new Set<string>();
+    const existingWorksheetNames = new Set<string>();
+    existingWorksheetNames.add('RESUMO GERAL'); // Adicionar o nome da aba de resumo
+    
     for (const branch of summaryData.branches) {
       const branchInvoices = allInvoices.filter(inv => inv.branch === branch.name);
-      const sheetName = generateUniqueSheetName(workbook, branch.name, usedNames);
-      await createAdvancedBranchWorksheet(workbook, branch, branchInvoices, sheetName);
+      await createAdvancedBranchWorksheet(workbook, branch, branchInvoices, existingWorksheetNames);
     }
 
     // Configurar resposta HTTP
@@ -356,10 +444,23 @@ export default async function handler(
 
   } catch (error) {
     console.error('Erro na geração do Excel:', error);
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'Não disponível');
+    console.error('Tipo de erro:', typeof error);
+    console.error('Estado do req.body:', {
+      exists: !!(req as any).body,
+      hasProcessedData: !!((req as any).body?.processedData),
+      processedDataType: typeof (req as any).body?.processedData
+    });
+    
     if (!res.headersSent) {
       res.status(500).json({ 
         success: false, 
-        message: 'Erro interno do servidor: ' + (error instanceof Error ? error.message : 'Erro desconhecido')
+        message: 'Erro interno do servidor: ' + (error instanceof Error ? error.message : 'Erro desconhecido'),
+        errorDetails: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack?.substring(0, 500) // Primeiros 500 chars do stack
+        } : 'Erro não identificado'
       });
     }
   }
@@ -506,15 +607,14 @@ async function createAdvancedSummaryWorksheet(
         
         // Verificar mudança de data para total diário
         if (currentDate && currentDate !== invoiceDate && dailyTotal > 0) {
-          summarySheet.addRow(['', '', 'TOTAL', dailyTotal]);
+          summarySheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
           const totalRow = summarySheet.getRow(summaryCurrentRow);
           totalRow.eachCell((cell, colNumber) => {
             cell.style = {
               font: { bold: true },
               fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
               numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-              border: cellStyle.border,
-              alignment: { horizontal: 'center', vertical: 'middle' }
+              border: cellStyle.border
             };
           });
           summaryCurrentRow++;
@@ -544,15 +644,14 @@ async function createAdvancedSummaryWorksheet(
       
       // Total final da categoria se houver dados pendentes
       if (dailyTotal > 0) {
-        summarySheet.addRow(['', '', 'TOTAL', dailyTotal]);
+        summarySheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
         const totalRow = summarySheet.getRow(summaryCurrentRow);
         totalRow.eachCell((cell, colNumber) => {
           cell.style = {
             font: { bold: true },
             fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
             numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-            border: cellStyle.border,
-            alignment: { horizontal: 'center', vertical: 'middle' }
+            border: cellStyle.border
           };
         });
         summaryCurrentRow++;
@@ -597,14 +696,47 @@ async function createAdvancedSummaryWorksheet(
 }
 
 // Função para criar aba individual da filial avançada
+// Função para gerar nomes únicos de worksheet
+function generateUniqueWorksheetName(baseName: string, existingNames: Set<string>): string {
+  // Limpar caracteres inválidos e limitar tamanho
+  let cleanName = baseName
+    .replace(/[\/\\\?\*\[\]]/g, '_')
+    .replace(/[^a-zA-Z0-9_\-\s]/g, '')
+    .substring(0, 25)
+    .trim();
+  
+  // Se o nome estiver vazio após limpeza, usar um padrão
+  if (!cleanName) {
+    cleanName = 'PLANILHA';
+  }
+  
+  // Se o nome não existe, usar como está
+  if (!existingNames.has(cleanName)) {
+    existingNames.add(cleanName);
+    return cleanName;
+  }
+  
+  // Se existe, adicionar número sequencial
+  let counter = 1;
+  let uniqueName = `${cleanName.substring(0, 22)}_${counter}`;
+  
+  while (existingNames.has(uniqueName)) {
+    counter++;
+    uniqueName = `${cleanName.substring(0, 22)}_${counter}`;
+  }
+  
+  existingNames.add(uniqueName);
+  return uniqueName;
+}
+
 async function createAdvancedBranchWorksheet(
   workbook: ExcelJS.Workbook, 
   branch: BranchData, 
   branchInvoices: InvoiceData[],
-  forcedName?: string
+  existingNames: Set<string>
 ) {
-  let cleanBranchName = (forcedName || branch.name).replace(/[\/\\\?\*\[\]]/g, '_').substring(0, 25);
-  const worksheet = workbook.addWorksheet(cleanBranchName);
+  const uniqueName = generateUniqueWorksheetName(branch.name, existingNames);
+  const worksheet = workbook.addWorksheet(uniqueName);
   let currentRow = 1;
 
   // Título da filial
@@ -631,7 +763,11 @@ async function createAdvancedBranchWorksheet(
     currentRow++;
   }
 
-  // Removido espaçamento extra solicitado (linhas vazias após período)
+  // Linha vazia
+  worksheet.addRow([]);
+  currentRow++;
+  worksheet.addRow([]);
+  currentRow++;
 
   // Detalhamento de transações por tipo
   if (branchInvoices.length > 0) {
@@ -667,15 +803,14 @@ async function createAdvancedBranchWorksheet(
         
         // Verificar mudança de data para total diário
         if (currentDate && currentDate !== invoiceDate && dailyTotal > 0) {
-          worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
+          worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
           const totalRow = worksheet.getRow(currentRow);
           totalRow.eachCell((cell, colNumber) => {
             cell.style = {
               font: { bold: true },
               fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
               numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-              border: cellStyle.border,
-              alignment: { horizontal: 'center', vertical: 'middle' }
+              border: cellStyle.border
             };
           });
           currentRow++;
@@ -704,15 +839,14 @@ async function createAdvancedBranchWorksheet(
 
       // Total final A_PAGAR
       if (dailyTotal > 0) {
-        worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
+        worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
         const totalRow = worksheet.getRow(currentRow);
         totalRow.eachCell((cell, colNumber) => {
           cell.style = {
             font: { bold: true },
             fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
             numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-            border: cellStyle.border,
-            alignment: { horizontal: 'center', vertical: 'middle' }
+            border: cellStyle.border
           };
         });
         currentRow++;
@@ -761,15 +895,14 @@ async function createAdvancedBranchWorksheet(
         
         // Verificar mudança de data para total diário
         if (currentDate && currentDate !== invoiceDate && dailyTotal > 0) {
-          worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
+          worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
           const totalRow = worksheet.getRow(currentRow);
           totalRow.eachCell((cell, colNumber) => {
             cell.style = {
               font: { bold: true },
               fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
               numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-              border: cellStyle.border,
-              alignment: { horizontal: 'center', vertical: 'middle' }
+              border: cellStyle.border
             };
           });
           currentRow++;
@@ -798,15 +931,14 @@ async function createAdvancedBranchWorksheet(
 
       // Total final A_RECEBER
       if (dailyTotal > 0) {
-        worksheet.addRow(['', '', 'TOTAL', dailyTotal]);
+        worksheet.addRow(['', '', 'TOTAL DIÁRIO', dailyTotal]);
         const totalRow = worksheet.getRow(currentRow);
         totalRow.eachCell((cell, colNumber) => {
           cell.style = {
             font: { bold: true },
             fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'F2F2F2' } },
             numFmt: colNumber === 4 ? 'R$ #,##0.00' : undefined,
-            border: cellStyle.border,
-            alignment: { horizontal: 'center', vertical: 'middle' }
+            border: cellStyle.border
           };
         });
         currentRow++;
@@ -943,17 +1075,19 @@ async function createBranchWorksheet(workbook: ExcelJS.Workbook, branch: BranchD
     worksheet.addRow([]); // Linha vazia
     
     // Cabeçalhos das transações
-    const transHeaderRow = worksheet.addRow(['Vencimento', 'Transacionador', 'Documento', 'Valor']);
+    const transHeaderRow = worksheet.addRow(['Vencimento', 'Transacionador', 'Documento', 'Valor', 'Tipo']);
     transHeaderRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
     transHeaderRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
     
     // Dados das transações
     processedData.transactions.forEach(transaction => {
+      const tipo = transaction.valorNumerico > 0 ? 'A Pagar' : 'A Receber';
       worksheet.addRow([
         transaction.vencimento,
         transaction.transacionador,
         transaction.documento,
-        transaction.valor
+        transaction.valor,
+        tipo
       ]);
     });
   } else {
@@ -974,7 +1108,8 @@ async function createBranchWorksheet(workbook: ExcelJS.Workbook, branch: BranchD
     { width: 15 }, // Vencimento
     { width: 25 }, // Transacionador
     { width: 15 }, // Documento
-    { width: 18 }  // Valor
+    { width: 18 }, // Valor
+    { width: 12 }  // Tipo
   ];
   
   // Adicionar bordas nas células importantes
@@ -991,24 +1126,4 @@ async function createBranchWorksheet(workbook: ExcelJS.Workbook, branch: BranchD
       }
     });
   });
-}
-
-// Gera nome de planilha único evitando colisões após truncagem
-function generateUniqueSheetName(workbook: ExcelJS.Workbook, rawName: string, used: Set<string>): string {
-  const base = rawName
-    .normalize('NFD')
-    .replace(/[^A-Za-z0-9 _-]/g, '') // remove caracteres especiais
-    .replace(/\s+/g, '_')
-    .toUpperCase();
-  const maxLen = 25; // ExcelJS limita a 31, reservamos para sufixos
-  let name = base.substring(0, maxLen);
-  let counter = 1;
-  const existing = new Set(workbook.worksheets.map(ws => ws.name));
-  while (existing.has(name) || used.has(name)) {
-    const suffix = `_${counter++}`;
-    const trimmed = base.substring(0, maxLen - suffix.length);
-    name = trimmed + suffix;
-  }
-  used.add(name);
-  return name;
 }
