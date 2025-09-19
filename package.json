@@ -47,6 +47,8 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
+    "drizzle-orm": "^0.33.0",
+    "drizzle-zod": "^0.5.1",
     "embla-carousel-react": "^8.6.0",
     "exceljs": "^4.4.0",
     "form-data": "^4.0.4",
