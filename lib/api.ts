@@ -1,5 +1,5 @@
-import { apiRequest } from "./queryClient";
-import { ProcessedData, FileUploadResponse } from "./schema";
+import { apiRequest } from "@/lib/queryClient";
+import { ProcessedData, FileUploadResponse } from "@shared/schema";
 
 export async function uploadCSVFile(files: File[], clearData: boolean = false, documentTypes: Record<number, string[]> = {}): Promise<FileUploadResponse> {
   const formData = new FormData();
