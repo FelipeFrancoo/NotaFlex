@@ -15,18 +15,18 @@
       "weekEnd": "2025-09-08T02:59:59.999Z"
     },
     {
-      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
-      "invoiceCount": 32,
-      "totalValue": "R$ 127.713,56",
-      "weekStart": "2025-09-01T03:00:00.000Z",
-      "weekEnd": "2025-09-08T02:59:59.999Z"
-    },
-    {
       "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-      "invoiceCount": 4,
-      "totalValue": "R$ 1.700.948,00",
+      "invoiceCount": 10,
+      "totalValue": "R$ 2.025.076,85",
       "weekStart": "2025-09-08T03:00:00.000Z",
       "weekEnd": "2025-09-15T02:59:59.999Z"
+    },
+    {
+      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+      "invoiceCount": 41,
+      "totalValue": "R$ 521.938,06",
+      "weekStart": "2025-09-01T03:00:00.000Z",
+      "weekEnd": "2025-09-08T02:59:59.999Z"
     }
   ],
   "dailyTotals": [
@@ -94,6 +94,48 @@
       "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (2)"
     },
     {
+      "date": "2025-09-10T03:00:00.000Z",
+      "dayOfWeek": "Quarta",
+      "totalValue": "R$ 54.248,00",
+      "invoiceCount": 3,
+      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
+    },
+    {
+      "date": "2025-09-12T03:00:00.000Z",
+      "dayOfWeek": "Sexta",
+      "totalValue": "R$ 1.696.950,00",
+      "invoiceCount": 2,
+      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
+    },
+    {
+      "date": "2025-09-06T03:00:00.000Z",
+      "dayOfWeek": "Sábado",
+      "totalValue": "R$ 9.000,00",
+      "invoiceCount": 1,
+      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
+    },
+    {
+      "date": "2025-09-07T03:00:00.000Z",
+      "dayOfWeek": "Domingo",
+      "totalValue": "R$ 211.200,00",
+      "invoiceCount": 1,
+      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
+    },
+    {
+      "date": "2025-09-08T03:00:00.000Z",
+      "dayOfWeek": "Segunda",
+      "totalValue": "R$ 47.078,85",
+      "invoiceCount": 2,
+      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
+    },
+    {
+      "date": "2025-09-09T03:00:00.000Z",
+      "dayOfWeek": "Terça",
+      "totalValue": "R$ 6.600,00",
+      "invoiceCount": 1,
+      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
+    },
+    {
       "date": "2025-09-02T03:00:00.000Z",
       "dayOfWeek": "Terça",
       "totalValue": "R$ 15.951,42",
@@ -110,44 +152,44 @@
     {
       "date": "2025-09-04T03:00:00.000Z",
       "dayOfWeek": "Quinta",
-      "totalValue": "R$ 23.755,21",
-      "invoiceCount": 6,
+      "totalValue": "R$ 291.355,21",
+      "invoiceCount": 7,
       "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)"
     },
     {
       "date": "2025-09-05T03:00:00.000Z",
       "dayOfWeek": "Sexta",
-      "totalValue": "R$ 59.979,95",
-      "invoiceCount": 13,
+      "totalValue": "R$ 174.979,95",
+      "invoiceCount": 16,
       "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)"
     },
     {
-      "date": "2025-09-10T03:00:00.000Z",
-      "dayOfWeek": "Quarta",
-      "totalValue": "R$ 54.248,00",
-      "invoiceCount": 3,
-      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
+      "date": "2025-08-31T03:00:00.000Z",
+      "dayOfWeek": "Domingo",
+      "totalValue": "R$ 11.482,00",
+      "invoiceCount": 4,
+      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)"
     },
     {
-      "date": "2025-09-12T03:00:00.000Z",
-      "dayOfWeek": "Sexta",
-      "totalValue": "R$ 1.646.700,00",
+      "date": "2025-09-01T03:00:00.000Z",
+      "dayOfWeek": "Segunda",
+      "totalValue": "R$ 142,50",
       "invoiceCount": 1,
-      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
+      "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)"
     }
   ],
   "weeklyTotals": {
-    "workingDaysTotal": "R$ 4.647.948,46",
-    "weekendTotal": "R$ 0,00",
-    "weekTotal": "R$ 4.647.948,46",
-    "workingDays": 15,
-    "weekendDays": 0,
-    "weekPeriod": "01/09/2025 - 12/09/2025",
+    "workingDaysTotal": "R$ 5.134.619,81",
+    "weekendTotal": "R$ 231.682,00",
+    "weekTotal": "R$ 5.366.301,81",
+    "workingDays": 18,
+    "weekendDays": 3,
+    "weekPeriod": "31/08/2025 - 12/09/2025",
     "totalPayable": 4647948.459999999,
-    "totalReceivable": 0
+    "totalReceivable": 718353.35
   },
-  "grandTotal": "R$ 4.647.948,46",
-  "totalInvoices": 102,
+  "grandTotal": "R$ 5.366.301,81",
+  "totalInvoices": 117,
   "transactions": [
     {
       "vencimento": "01/09/2025",
@@ -810,6 +852,106 @@
       "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (2).csv"
     },
     {
+      "vencimento": "10/09/2025",
+      "transacionador": "BANCO DO BRASIL S A JATAI - GO",
+      "documento": "8.652",
+      "valor": "R$ 10.140,00",
+      "valorNumerico": 10140,
+      "documentType": "A_PAGAR",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+    },
+    {
+      "vencimento": "10/09/2025",
+      "transacionador": "KEPLER WEBER INDL S/A",
+      "documento": "201986",
+      "valor": "R$ 35.000,00",
+      "valorNumerico": 35000,
+      "documentType": "A_PAGAR",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+    },
+    {
+      "vencimento": "10/09/2025",
+      "transacionador": "QS CONTROLADORIA E ASSESSORIA CONTABIL",
+      "documento": "3942",
+      "valor": "R$ 9.108,00",
+      "valorNumerico": 9108,
+      "documentType": "A_PAGAR",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+    },
+    {
+      "vencimento": "12/09/2025",
+      "transacionador": "JORGE GUILHERME GROSS - FAZENDA VARGEM BONITA III",
+      "documento": "1.646700",
+      "valor": "R$ 1.646.700,00",
+      "valorNumerico": 1646700,
+      "documentType": "A_PAGAR",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+    },
+    {
+      "vencimento": "06/09/2025",
+      "transacionador": "JERONIMO ANICETO REZENDE",
+      "documento": "8886",
+      "valor": "R$ 9.000,00",
+      "valorNumerico": 9000,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+    },
+    {
+      "vencimento": "07/09/2025",
+      "transacionador": "JOAO FRANCISCO SILVEIRA GOULART",
+      "documento": "7314",
+      "valor": "R$ 211.200,00",
+      "valorNumerico": 211200,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+    },
+    {
+      "vencimento": "08/09/2025",
+      "transacionador": "DUQUIMA AGRONEGOCIOS LTDA",
+      "documento": "5990",
+      "valor": "R$ 24.830,00",
+      "valorNumerico": 24830,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+    },
+    {
+      "vencimento": "08/09/2025",
+      "transacionador": "HELIO ROSA CABRAL JUNIOR",
+      "documento": "7482",
+      "valor": "R$ 22.248,85",
+      "valorNumerico": 22248.85,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+    },
+    {
+      "vencimento": "09/09/2025",
+      "transacionador": "HELENA DE ASSIS CARVALHO",
+      "documento": "6670",
+      "valor": "R$ 6.600,00",
+      "valorNumerico": 6600,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+    },
+    {
+      "vencimento": "12/09/2025",
+      "transacionador": "DUQUIMA AGRONEGOCIOS LTDA",
+      "documento": "7398",
+      "valor": "R$ 50.250,00",
+      "valorNumerico": 50250,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+    },
+    {
       "vencimento": "02/09/2025",
       "transacionador": "AGRONOMICA- LABORATORIO DE DIAGNOSTICO FITOSSANIT",
       "documento": "6752",
@@ -1130,44 +1272,94 @@
       "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (3) (1).csv"
     },
     {
-      "vencimento": "10/09/2025",
-      "transacionador": "BANCO DO BRASIL S A JATAI - GO",
-      "documento": "8.652",
-      "valor": "R$ 10.140,00",
-      "valorNumerico": 10140,
-      "documentType": "A_PAGAR",
-      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+      "vencimento": "31/08/2025",
+      "transacionador": "DANILO REZENDE DE OLIVEIRA",
+      "documento": "689",
+      "valor": "R$ 223,28",
+      "valorNumerico": 223.28,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (3) (1).csv"
     },
     {
-      "vencimento": "10/09/2025",
-      "transacionador": "KEPLER WEBER INDL S/A",
-      "documento": "201986",
-      "valor": "R$ 35.000,00",
-      "valorNumerico": 35000,
-      "documentType": "A_PAGAR",
-      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+      "vencimento": "31/08/2025",
+      "transacionador": "ELVARDO ANTUNES DA SILVA",
+      "documento": "7411",
+      "valor": "R$ 10.679,50",
+      "valorNumerico": 10679.5,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (3) (1).csv"
     },
     {
-      "vencimento": "10/09/2025",
-      "transacionador": "QS CONTROLADORIA E ASSESSORIA CONTABIL",
-      "documento": "3942",
-      "valor": "R$ 9.108,00",
-      "valorNumerico": 9108,
-      "documentType": "A_PAGAR",
-      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+      "vencimento": "31/08/2025",
+      "transacionador": "ISABELLA CAROLINA CASTRO NEVES REZENDE",
+      "documento": "989",
+      "valor": "R$ 132,66",
+      "valorNumerico": 132.66,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (3) (1).csv"
     },
     {
-      "vencimento": "12/09/2025",
-      "transacionador": "JORGE GUILHERME GROSS - FAZENDA VARGEM BONITA III",
-      "documento": "1.646700",
-      "valor": "R$ 1.646.700,00",
-      "valorNumerico": 1646700,
-      "documentType": "A_PAGAR",
-      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
+      "vencimento": "31/08/2025",
+      "transacionador": "WALTER NUNES",
+      "documento": "690",
+      "valor": "R$ 446,56",
+      "valorNumerico": 446.56,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (3) (1).csv"
+    },
+    {
+      "vencimento": "01/09/2025",
+      "transacionador": "DUQUIMA AGRONEGOCIOS LTDA",
+      "documento": "6032",
+      "valor": "R$ 142,50",
+      "valorNumerico": 142.5,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (3) (1).csv"
+    },
+    {
+      "vencimento": "04/09/2025",
+      "transacionador": "DUQUIMA AGRONEGOCIOS LTDA",
+      "documento": "7018",
+      "valor": "R$ 267.600,00",
+      "valorNumerico": 267600,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (3) (1).csv"
+    },
+    {
+      "vencimento": "05/09/2025",
+      "transacionador": "CCL INSUMOS AGROPECUARIOS LTDA",
+      "documento": "8540",
+      "valor": "R$ 74.700,00",
+      "valorNumerico": 74700,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (3) (1).csv"
+    },
+    {
+      "vencimento": "05/09/2025",
+      "transacionador": "CCL INSUMOS AGROPECUARIOS LTDA",
+      "documento": "7997",
+      "valor": "R$ 34.300,00",
+      "valorNumerico": 34300,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (3) (1).csv"
+    },
+    {
+      "vencimento": "05/09/2025",
+      "transacionador": "FERNANDO RODRIGUES DE ANDRADE",
+      "documento": "7405",
+      "valor": "R$ 6.000,00",
+      "valorNumerico": 6000,
+      "documentType": "A_RECEBER",
+      "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+      "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (3) (1).csv"
     }
   ]
 }

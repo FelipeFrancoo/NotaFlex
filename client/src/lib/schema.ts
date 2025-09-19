@@ -1,4 +1,9 @@
 import { z } from "zod";
+import type { ProcessedData as SharedProcessedData } from "@shared/schema";
+
+// Re-export ProcessedData to avoid breaking other parts of the client-side code
+// that might be importing it from this file.
+export type ProcessedData = SharedProcessedData;
 
 // Types for the application without database dependencies
 export type Invoice = {
@@ -29,27 +34,10 @@ export type DailySummary = {
   dayOfWeek: string;
   totalValue: string;
   invoiceCount: number;
-  branch?: string;
+  branch: string | null;
 };
 
 // Additional types for API responses
-export type ProcessedData = {
-  branchTotals: BranchSummary[];
-  dailyTotals: DailySummary[];
-  weeklyTotals: {
-    workingDaysTotal: string;
-    weekendTotal: string;
-    weekTotal: string;
-    workingDays: number;
-    weekendDays: number;
-    weekPeriod: string;
-    totalPayable: number;
-    totalReceivable: number;
-  };
-  grandTotal: string;
-  totalInvoices: number;
-};
-
 export type FileUploadResponse = {
   success: boolean;
   message: string;
