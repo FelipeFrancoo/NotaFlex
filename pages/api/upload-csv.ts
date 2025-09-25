@@ -646,12 +646,7 @@ export default async function handler(
     };
 
     // Cache dos dados processados para exportação posterior sem precisar reenviar pelo frontend
-    try {
-      const cachePath = path.join(tempDir, 'last_processed.json');
-      fs.writeFileSync(cachePath, JSON.stringify(processedData, null, 2), 'utf8');
-    } catch (cacheErr) {
-      console.warn('Não foi possível salvar cache de processedData:', cacheErr);
-    }
+      // Removido: não salva mais cache local em temp/last_processed.json
 
     // ===== INÍCIO: GERAÇÃO DE summaryData PARA /api/export-summary-excel =====
     try {
