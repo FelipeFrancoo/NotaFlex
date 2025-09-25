@@ -2,13 +2,7 @@
   "processedData": {
     "branchTotals": [
       {
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "invoiceCount": 12,
-        "totalValue": "R$ 129.763,24",
-        "weekStart": "2025-09-01T03:00:00.000Z",
-        "weekEnd": "2025-09-08T02:59:59.999Z"
-      },
-      {
+        "id": "b9e37fa3-b979-4aa7-b02d-1a348f19e4c3",
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (2)",
         "invoiceCount": 54,
         "totalValue": "R$ 2.689.523,66",
@@ -16,13 +10,7 @@
         "weekEnd": "2025-09-08T02:59:59.999Z"
       },
       {
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "invoiceCount": 10,
-        "totalValue": "R$ 2.025.076,85",
-        "weekStart": "2025-09-08T03:00:00.000Z",
-        "weekEnd": "2025-09-15T02:59:59.999Z"
-      },
-      {
+        "id": "2cc9c950-635a-4181-af5b-f36388a5513d",
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
         "invoiceCount": 41,
         "totalValue": "R$ 521.938,06",
@@ -32,34 +20,7 @@
     ],
     "dailyTotals": [
       {
-        "date": "2025-09-01T03:00:00.000Z",
-        "dayOfWeek": "Segunda",
-        "totalValue": "R$ 18.166,67",
-        "invoiceCount": 2,
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)"
-      },
-      {
-        "date": "2025-09-02T03:00:00.000Z",
-        "dayOfWeek": "Terça",
-        "totalValue": "R$ 43.200,00",
-        "invoiceCount": 2,
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)"
-      },
-      {
-        "date": "2025-09-03T03:00:00.000Z",
-        "dayOfWeek": "Quarta",
-        "totalValue": "R$ 6.367,00",
-        "invoiceCount": 4,
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)"
-      },
-      {
-        "date": "2025-09-05T03:00:00.000Z",
-        "dayOfWeek": "Sexta",
-        "totalValue": "R$ 62.029,57",
-        "invoiceCount": 4,
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)"
-      },
-      {
+        "id": "854838c7-b4d9-4a12-be8e-dd7252e20e5e",
         "date": "2025-09-01T03:00:00.000Z",
         "dayOfWeek": "Segunda",
         "totalValue": "R$ 666.881,36",
@@ -67,6 +28,7 @@
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (2)"
       },
       {
+        "id": "9a0d412a-f1d9-408e-a14d-db34d20ffeba",
         "date": "2025-09-02T03:00:00.000Z",
         "dayOfWeek": "Terça",
         "totalValue": "R$ 53.346,54",
@@ -74,6 +36,7 @@
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (2)"
       },
       {
+        "id": "839daa05-44db-412f-bf5e-3f06510dc747",
         "date": "2025-09-03T03:00:00.000Z",
         "dayOfWeek": "Quarta",
         "totalValue": "R$ 13.465,31",
@@ -81,6 +44,7 @@
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (2)"
       },
       {
+        "id": "2bb60d68-0505-488d-a90a-b3b79eea84df",
         "date": "2025-09-04T03:00:00.000Z",
         "dayOfWeek": "Quinta",
         "totalValue": "R$ 2.393,00",
@@ -88,6 +52,7 @@
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (2)"
       },
       {
+        "id": "c165ce0d-3d11-46e1-9817-39e910bc231d",
         "date": "2025-09-05T03:00:00.000Z",
         "dayOfWeek": "Sexta",
         "totalValue": "R$ 1.953.437,45",
@@ -95,48 +60,7 @@
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (2)"
       },
       {
-        "date": "2025-09-10T03:00:00.000Z",
-        "dayOfWeek": "Quarta",
-        "totalValue": "R$ 54.248,00",
-        "invoiceCount": 3,
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
-      },
-      {
-        "date": "2025-09-12T03:00:00.000Z",
-        "dayOfWeek": "Sexta",
-        "totalValue": "R$ 1.696.950,00",
-        "invoiceCount": 2,
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
-      },
-      {
-        "date": "2025-09-06T03:00:00.000Z",
-        "dayOfWeek": "Sábado",
-        "totalValue": "R$ 9.000,00",
-        "invoiceCount": 1,
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
-      },
-      {
-        "date": "2025-09-07T03:00:00.000Z",
-        "dayOfWeek": "Domingo",
-        "totalValue": "R$ 211.200,00",
-        "invoiceCount": 1,
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
-      },
-      {
-        "date": "2025-09-08T03:00:00.000Z",
-        "dayOfWeek": "Segunda",
-        "totalValue": "R$ 47.078,85",
-        "invoiceCount": 2,
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
-      },
-      {
-        "date": "2025-09-09T03:00:00.000Z",
-        "dayOfWeek": "Terça",
-        "totalValue": "R$ 6.600,00",
-        "invoiceCount": 1,
-        "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)"
-      },
-      {
+        "id": "b25359b4-01d4-4486-ab69-dfafb979e946",
         "date": "2025-09-02T03:00:00.000Z",
         "dayOfWeek": "Terça",
         "totalValue": "R$ 15.951,42",
@@ -144,6 +68,7 @@
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)"
       },
       {
+        "id": "326a61bb-f32e-41cf-96fd-8b56757ffeca",
         "date": "2025-09-03T03:00:00.000Z",
         "dayOfWeek": "Quarta",
         "totalValue": "R$ 28.026,98",
@@ -151,6 +76,7 @@
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)"
       },
       {
+        "id": "0f61234a-639e-40a3-9433-ab4895647b02",
         "date": "2025-09-04T03:00:00.000Z",
         "dayOfWeek": "Quinta",
         "totalValue": "R$ 291.355,21",
@@ -158,6 +84,7 @@
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)"
       },
       {
+        "id": "279ff7b6-100c-4fbe-a0dc-7c05155697e2",
         "date": "2025-09-05T03:00:00.000Z",
         "dayOfWeek": "Sexta",
         "totalValue": "R$ 174.979,95",
@@ -165,6 +92,7 @@
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)"
       },
       {
+        "id": "4c086cdd-cae6-451a-a5c4-a4b522435510",
         "date": "2025-08-31T03:00:00.000Z",
         "dayOfWeek": "Domingo",
         "totalValue": "R$ 11.482,00",
@@ -172,6 +100,7 @@
         "branch": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)"
       },
       {
+        "id": "02ec5979-8d80-4641-9c66-fae16ddfe41e",
         "date": "2025-09-01T03:00:00.000Z",
         "dayOfWeek": "Segunda",
         "totalValue": "R$ 142,50",
@@ -180,138 +109,18 @@
       }
     ],
     "weeklyTotals": {
-      "workingDaysTotal": "R$ 5.134.619,81",
-      "weekendTotal": "R$ 231.682,00",
-      "weekTotal": "R$ 5.366.301,81",
-      "workingDays": 18,
-      "weekendDays": 3,
-      "weekPeriod": "31/08/2025 - 12/09/2025",
-      "totalPayable": 4647948.459999999,
-      "totalReceivable": 718353.35
+      "workingDaysTotal": "R$ 3.199.979,72",
+      "weekendTotal": "R$ 11.482,00",
+      "weekTotal": "R$ 3.211.461,72",
+      "workingDays": 10,
+      "weekendDays": 1,
+      "weekPeriod": "31/08/2025 - 05/09/2025",
+      "totalPayable": 2817237.2199999983,
+      "totalReceivable": 394224.5
     },
-    "grandTotal": "R$ 5.366.301,81",
-    "totalInvoices": 117,
+    "grandTotal": "R$ 3.211.461,72",
+    "totalInvoices": 95,
     "transactions": [
-      {
-        "vencimento": "01/09/2025",
-        "transacionador": "GAIARDO COMERCIO E SERVICOS ELETRICOS LTDA",
-        "documento": "27920",
-        "valor": "R$ 10.166,67",
-        "valorNumerico": 10166.67,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "01/09/2025",
-        "transacionador": "TALES AUGUSTO MACHADO",
-        "documento": "40.000",
-        "valor": "R$ 8.000,00",
-        "valorNumerico": 8000,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "02/09/2025",
-        "transacionador": "BRASMIX ENGENHARIA DE CONCRETO LTDA",
-        "documento": "5553",
-        "valor": "R$ 42.700,00",
-        "valorNumerico": 42700,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "02/09/2025",
-        "transacionador": "JOAO PEDRO JOSAFA FABRIS SANCHES",
-        "documento": "2909",
-        "valor": "R$ 500,00",
-        "valorNumerico": 500,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "03/09/2025",
-        "transacionador": "GAIARDO COMERCIO E SERVICOS ELETRICOS LTDA",
-        "documento": "28967",
-        "valor": "R$ 2.000,00",
-        "valorNumerico": 2000,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "03/09/2025",
-        "transacionador": "GAIARDO COMERCIO E SERVICOS ELETRICOS LTDA",
-        "documento": "28971",
-        "valor": "R$ 159,00",
-        "valorNumerico": 159,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "03/09/2025",
-        "transacionador": "GAIARDO COMERCIO E SERVICOS ELETRICOS LTDA",
-        "documento": "29047",
-        "valor": "R$ 138,00",
-        "valorNumerico": 138,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "03/09/2025",
-        "transacionador": "GAIARDO COMERCIO E SERVICOS ELETRICOS LTDA",
-        "documento": "29126",
-        "valor": "R$ 4.070,00",
-        "valorNumerico": 4070,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "05/09/2025",
-        "transacionador": "BRASMIX ENGENHARIA DE CONCRETO LTDA",
-        "documento": "5552",
-        "valor": "R$ 41.480,00",
-        "valorNumerico": 41480,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "05/09/2025",
-        "transacionador": "BRASMIX ENGENHARIA DE CONCRETO LTDA",
-        "documento": "5551",
-        "valor": "R$ 1.590,00",
-        "valorNumerico": 1590,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "05/09/2025",
-        "transacionador": "EQUATORIAL ENERGIA",
-        "documento": "2907",
-        "valor": "R$ 12.959,57",
-        "valorNumerico": 12959.57,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
-      {
-        "vencimento": "05/09/2025",
-        "transacionador": "LTF AGROPECUARIA LTDA EPP",
-        "documento": "2908",
-        "valor": "R$ 6.000,00",
-        "valorNumerico": 6000,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (1).csv"
-      },
       {
         "vencimento": "01/09/2025",
         "transacionador": "ACOS IMPERIAL COMERCIO DE FERROS LTDA",
@@ -853,106 +662,6 @@
         "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (2).csv"
       },
       {
-        "vencimento": "10/09/2025",
-        "transacionador": "BANCO DO BRASIL S A JATAI - GO",
-        "documento": "8.652",
-        "valor": "R$ 10.140,00",
-        "valorNumerico": 10140,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
-      },
-      {
-        "vencimento": "10/09/2025",
-        "transacionador": "KEPLER WEBER INDL S/A",
-        "documento": "201986",
-        "valor": "R$ 35.000,00",
-        "valorNumerico": 35000,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
-      },
-      {
-        "vencimento": "10/09/2025",
-        "transacionador": "QS CONTROLADORIA E ASSESSORIA CONTABIL",
-        "documento": "3942",
-        "valor": "R$ 9.108,00",
-        "valorNumerico": 9108,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
-      },
-      {
-        "vencimento": "12/09/2025",
-        "transacionador": "JORGE GUILHERME GROSS - FAZENDA VARGEM BONITA III",
-        "documento": "1.646700",
-        "valor": "R$ 1.646.700,00",
-        "valorNumerico": 1646700,
-        "documentType": "A_PAGAR",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
-      },
-      {
-        "vencimento": "06/09/2025",
-        "transacionador": "JERONIMO ANICETO REZENDE",
-        "documento": "8886",
-        "valor": "R$ 9.000,00",
-        "valorNumerico": 9000,
-        "documentType": "A_RECEBER",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
-      },
-      {
-        "vencimento": "07/09/2025",
-        "transacionador": "JOAO FRANCISCO SILVEIRA GOULART",
-        "documento": "7314",
-        "valor": "R$ 211.200,00",
-        "valorNumerico": 211200,
-        "documentType": "A_RECEBER",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
-      },
-      {
-        "vencimento": "08/09/2025",
-        "transacionador": "DUQUIMA AGRONEGOCIOS LTDA",
-        "documento": "5990",
-        "valor": "R$ 24.830,00",
-        "valorNumerico": 24830,
-        "documentType": "A_RECEBER",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
-      },
-      {
-        "vencimento": "08/09/2025",
-        "transacionador": "HELIO ROSA CABRAL JUNIOR",
-        "documento": "7482",
-        "valor": "R$ 22.248,85",
-        "valorNumerico": 22248.85,
-        "documentType": "A_RECEBER",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
-      },
-      {
-        "vencimento": "09/09/2025",
-        "transacionador": "HELENA DE ASSIS CARVALHO",
-        "documento": "6670",
-        "valor": "R$ 6.600,00",
-        "valorNumerico": 6600,
-        "documentType": "A_RECEBER",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
-      },
-      {
-        "vencimento": "12/09/2025",
-        "transacionador": "DUQUIMA AGRONEGOCIOS LTDA",
-        "documento": "7398",
-        "valor": "R$ 50.250,00",
-        "valorNumerico": 50250,
-        "documentType": "A_RECEBER",
-        "filial": "T014_VISAOGERALFLUXOCAIXADETALHADO (4) (1)",
-        "sourceFile": "T014_VisaoGeralFluxoCaixaDetalhado (4) (1).csv"
-      },
-      {
         "vencimento": "02/09/2025",
         "transacionador": "AGRONOMICA- LABORATORIO DE DIAGNOSTICO FITOSSANIT",
         "documento": "6752",
@@ -1367,63 +1076,71 @@
   "summaryData": {
     "branches": [
       {
-        "name": "BEIJA FLOR",
-        "totalAPagar": 1700948,
+        "name": "T014_VISAOGERALFLUXOCAIXADETALHADO (2)",
+        "totalAPagar": 2689523.659999999,
         "totalAReceber": 0,
-        "total": 1700948
+        "total": 2689523.659999999
       },
       {
-        "name": "GO SEEDS",
-        "totalAPagar": 129763.24,
-        "totalAReceber": 0,
-        "total": 129763.24
-      },
-      {
-        "name": "Ubs",
-        "totalAPagar": 2689523.66,
-        "totalAReceber": 0,
-        "total": 2689523.66
-      },
-      {
-        "name": "ULTRA SEEDS",
-        "totalAPagar": 2689523.66,
-        "totalAReceber": 0,
-        "total": 2689523.66
+        "name": "T014_VISAOGERALFLUXOCAIXADETALHADO (3) (1)",
+        "totalAPagar": 127713.56,
+        "totalAReceber": 394224.5,
+        "total": 521938.06
       }
     ],
-    "grandTotal": 7209758.5600000005,
-    "grandTotalAPagar": 7209758.5600000005,
-    "grandTotalAReceber": 0,
-    "dateSpecificTotals": [
+    "dailyTotals": [],
+    "documentDates": [
       {
         "day": "01/09/2025",
-        "total": 1351929.3900000001
+        "dayOfWeek": "Segunda",
+        "total": 666881.3599999999
       },
       {
         "day": "02/09/2025",
-        "total": 149893.08000000002
+        "dayOfWeek": "Terça",
+        "total": 69297.95999999999
       },
       {
         "day": "03/09/2025",
-        "total": 33297.619999999995
+        "dayOfWeek": "Quarta",
+        "total": 41492.28999999999
       },
       {
         "day": "04/09/2025",
-        "total": 4786
+        "dayOfWeek": "Quinta",
+        "total": 26148.21
       },
       {
         "day": "05/09/2025",
-        "total": 3968904.4699999997
-      },
-      {
-        "day": "10/09/2025",
-        "total": 54248
-      },
-      {
-        "day": "12/09/2025",
-        "total": 1646700
+        "dayOfWeek": "Sexta",
+        "total": 2013417.4
       }
     ],
-    "generatedAt": "2025-09-19T19:33:30.000Z"
+    "dateSpecificTotals": [
+      {
+        "day": "01/09/2025",
+        "total": 666881.3599999999
+      },
+      {
+        "day": "02/09/2025",
+        "total": 69297.95999999999
+      },
+      {
+        "day": "03/09/2025",
+        "total": 41492.28999999999
+      },
+      {
+        "day": "04/09/2025",
+        "total": 26148.21
+      },
+      {
+        "day": "05/09/2025",
+        "total": 2013417.4
+      }
+    ],
+    "grandTotal": 2817237.2199999997,
+    "grandTotalAPagar": 2817237.2199999993,
+    "grandTotalAReceber": 394224.5,
+    "totalAPagar": 2817237.2199999993
   }
 }

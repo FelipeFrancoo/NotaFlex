@@ -335,7 +335,7 @@ export default async function handler(
 
     const allTransactions: TransactionData[] = [];
     const allFilesData: any[] = [];
-    
+    const allFilesResults: any[] = [];
     // Processar cada arquivo CSV
     for (const file of csvFiles) {
       console.log(`=== PROCESSING FILE: ${file?.originalFilename} ===`);
@@ -404,6 +404,106 @@ export default async function handler(
         totalTransactions: fileTransactions.length
       });
       
+      // Agregação individual por arquivo
+      const branchTotalsMap = new Map<string, {
+        invoiceCount: number;
+        totalValue: number;
+        weekStart: Date;
+        weekEnd: Date;
+      }>();
+      const dailyTotalsMap = new Map<string, {
+        date: Date;
+        dayOfWeek: string;
+        totalValue: number;
+        invoiceCount: number;
+        branch: string;
+      }>();
+      let totalPayable = 0;
+      let totalReceivable = 0;
+      let grandTotalValue = 0;
+      fileTransactions.forEach(transaction => {
+        const { branch, date, value, documentType } = transaction;
+        const { weekStart, weekEnd } = getWeekBoundaries(date);
+        const branchKey = branch;
+        if (!branchTotalsMap.has(branchKey)) {
+          branchTotalsMap.set(branchKey, {
+            invoiceCount: 0,
+            totalValue: 0,
+            weekStart,
+            weekEnd
+          });
+        }
+        const branchTotal = branchTotalsMap.get(branchKey)!;
+        branchTotal.invoiceCount++;
+        branchTotal.totalValue += value;
+        const dateKey = `${branch}-${date.toISOString().split('T')[0]}`;
+        const dayOfWeek = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][date.getDay()];
+        if (!dailyTotalsMap.has(dateKey)) {
+          dailyTotalsMap.set(dateKey, {
+            date,
+            dayOfWeek,
+            totalValue: 0,
+            invoiceCount: 0,
+            branch
+          });
+        }
+        const dailyTotal = dailyTotalsMap.get(dateKey)!;
+        dailyTotal.totalValue += value;
+        dailyTotal.invoiceCount++;
+        if (documentType === 'A_PAGAR') {
+          totalPayable += value;
+        } else if (documentType === 'A_RECEBER') {
+          totalReceivable += value;
+        }
+        grandTotalValue += value;
+      });
+      const branchTotals = Array.from(branchTotalsMap.entries()).map(([branch, data]) => ({
+        id: randomUUID(),
+        branch,
+        invoiceCount: data.invoiceCount,
+        totalValue: `R$ ${data.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        weekStart: data.weekStart,
+        weekEnd: data.weekEnd
+      }));
+      const dailyTotals = Array.from(dailyTotalsMap.values()).map(data => ({
+        id: randomUUID(),
+        ...data,
+        totalValue: `R$ ${data.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+      }));
+      const workingDaysTotal = dailyTotals
+        .filter(d => ![0, 6].includes(d.date.getDay()))
+        .reduce((sum, d) => sum + parseMonetaryValue(d.totalValue), 0);
+      const weekendTotal = dailyTotals
+        .filter(d => [0, 6].includes(d.date.getDay()))
+        .reduce((sum, d) => sum + parseMonetaryValue(d.totalValue), 0);
+      const workingDays = dailyTotals.filter(d => ![0, 6].includes(d.date.getDay())).length;
+      const weekendDays = dailyTotals.filter(d => [0, 6].includes(d.date.getDay())).length;
+      const minDate = fileTransactions.length > 0 
+        ? new Date(Math.min(...fileTransactions.map(t => t.date.getTime())))
+        : new Date();
+      const maxDate = fileTransactions.length > 0 
+        ? new Date(Math.max(...fileTransactions.map(t => t.date.getTime())))
+        : new Date();
+      allFilesResults.push({
+        filename: file.originalFilename,
+        branch: branchName,
+        processedData: {
+          branchTotals,
+          dailyTotals,
+          weeklyTotals: {
+            workingDaysTotal: `R$ ${workingDaysTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            weekendTotal: `R$ ${weekendTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            weekTotal: `R$ ${grandTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            workingDays,
+            weekendDays,
+            weekPeriod: `${minDate.toLocaleDateString('pt-BR')} - ${maxDate.toLocaleDateString('pt-BR')}`,
+            totalPayable,
+            totalReceivable
+          },
+          grandTotal: `R$ ${grandTotalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+          totalInvoices: fileTransactions.length
+        }
+      });
       // Limpar arquivo temporário
       if (file.filepath && fs.existsSync(file.filepath)) {
         fs.unlinkSync(file.filepath);
@@ -634,7 +734,7 @@ export default async function handler(
     return res.status(200).json({
       success: true,
       message: `${csvFiles.length} arquivo(s) processado(s) com sucesso`,
-      data: clientProcessedData,
+      data: allFilesResults,
       summaryData: storage.get('summaryData') || null,
       allFilesData
     });
